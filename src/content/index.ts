@@ -1,6 +1,7 @@
 // Thin content script entry — dynamically loads the heavy renderer
 const SPLASH_ID = 'md-reader-splash'
 const SPLASH_STYLE_ID = 'md-reader-splash-style'
+const RAW_MARKDOWN_CONTENT_TYPES = ['text/plain', 'text/markdown', 'text/x-markdown']
 
 type SplashTheme = 'light' | 'dark'
 
@@ -13,13 +14,18 @@ function isMarkdownLikePath(): boolean {
   return /\.(md|mdx|mdc|mkd|txt|markdown)$/i.test(location.pathname)
 }
 
+function isFileURL(): boolean {
+  return location.protocol === 'file:'
+}
+
+function isRawTextDocument(): boolean {
+  return RAW_MARKDOWN_CONTENT_TYPES.includes(document.contentType.toLowerCase())
+}
+
 function isRenderableTextPage(): boolean {
-  const contentType = document.contentType
-  return (
-    isMarkdownLikePath() ||
-    ['text/plain', 'text/markdown', 'text/x-markdown'].includes(contentType) ||
-    contentType.startsWith('text/')
-  )
+  return isFileURL()
+    ? isMarkdownLikePath()
+    : isMarkdownLikePath() && isRawTextDocument()
 }
 
 function getPreferredSplashTheme(): SplashTheme {
@@ -27,7 +33,7 @@ function getPreferredSplashTheme(): SplashTheme {
 }
 
 function createSplash(): SplashController | undefined {
-  if (!isMarkdownLikePath()) return undefined
+  if (!isRenderableTextPage()) return undefined
 
   const existing = document.getElementById(SPLASH_ID)
   if (existing && window.__mdReaderSplash) return window.__mdReaderSplash

@@ -59,7 +59,7 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     codeTheme: 'auto',
     fontSize: 'Normal',
     hideDotFiles: false,
-    sideWidth: 260,
+    sideWidth: 320,
     fileTreeRootURL: undefined,
     ...merge,
   }

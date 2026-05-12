@@ -8,12 +8,12 @@
   "default_locale": "en",
   "homepage_url": "https://github.com/summereasy/md-reader",
   "icons": {
-    "16": "assets/logo.png",
-    "24": "assets/logo.png",
-    "32": "assets/logo.png",
-    "48": "assets/logo.png",
-    "128": "assets/logo.png",
-    "512": "assets/logo.png"
+    "16": "assets/logo-stroke.png",
+    "24": "assets/logo-stroke.png",
+    "32": "assets/logo-stroke.png",
+    "48": "assets/logo-stroke.png",
+    "128": "assets/logo-stroke.png",
+    "512": "assets/logo-stroke.png"
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
@@ -25,9 +25,9 @@
     "default_title": "__MSG_ext_name__",
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "assets/logo.png",
-      "24": "assets/logo.png",
-      "32": "assets/logo.png"
+      "16": "assets/logo-stroke.png",
+      "24": "assets/logo-stroke.png",
+      "32": "assets/logo-stroke.png"
     }
   },
   "options_ui": {

@@ -2,8 +2,8 @@
 import throttle from 'lodash.throttle'
 import { storage } from '@/shared/storage'
 import { mdRender } from './renderer'
-import { getDefaultData } from '@/shared/types'
-import type { StorageData, Theme } from '@/shared/types'
+import { FONT_SIZE_MAP, getDefaultData } from '@/shared/types'
+import type { FontSize, StorageData, Theme } from '@/shared/types'
 import { getEventBus } from './plugins/event'
 import blockCopyPlugin from './plugins/block-copy'
 import imgViewerPlugin from './plugins/img-viewer'
@@ -29,7 +29,11 @@ const HEADERS = 'h1, h2, h3, h4, h5, h6'
 const ROOT_THEME_ATTR = 'data-mdr-theme'
 const ROOT_THEME_DISABLED_ATTR = 'data-mdr-theme-disabled'
 const SIDE_WIDTH_VAR = '--mdr-side-width'
+const CONTENT_FONT_SIZE_VAR = '--mdr-content-font-size'
 const SIDE_WIDTH_STORAGE_KEY = 'sideWidth'
+const LEGACY_DEFAULT_SIDE_WIDTH = 260
+const PREVIOUS_DEFAULT_SIDE_WIDTH = 300
+const PREVIOUS_DEFAULT_SIDE_WIDTH_MAX = 308
 const FILE_TREE_ROOT_STORAGE_KEY = 'fileTreeRootURL'
 const CURRENT_FILE_QUERY_KEY = 'mdReaderFile'
 const KATEX_STYLE_ID = 'md-reader-katex-style'
@@ -62,7 +66,7 @@ const CN = {
 
 const ICONS = {
   code: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-  side: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>',
+  side: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5C4 4.67 4.67 4 5.5 4h13c.83 0 1.5.67 1.5 1.5v13c0 .83-.67 1.5-1.5 1.5h-13C4.67 20 4 19.33 4 18.5v-13Z"/><path d="M9 4v16"/></svg>',
   top: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
 }
 
@@ -93,7 +97,7 @@ function toTheme(theme: Theme): Exclude<Theme, 'auto'> {
 }
 
 function setTheme(theme: Theme): void {
-  HTML.setAttribute(ROOT_THEME_ATTR, theme)
+  HTML.setAttribute(ROOT_THEME_ATTR, toTheme(theme))
 }
 
 function rerender(data: StorageData, mdContent: HTMLElement): void {
@@ -226,6 +230,13 @@ function setSidebarWidth(value: number): void {
   HTML.style.setProperty(SIDE_WIDTH_VAR, `${width}px`)
 }
 
+function setContentFontSize(fontSize?: FontSize): void {
+  const value = fontSize && FONT_SIZE_MAP[fontSize]
+    ? FONT_SIZE_MAP[fontSize]
+    : FONT_SIZE_MAP.Normal
+  HTML.style.setProperty(CONTENT_FONT_SIZE_VAR, `${value}px`)
+}
+
 function getFileTreeRootURL(data: StorageData): string | null {
   const fallbackRoot = getParentDirectoryURL(window.location.href)
   if (!fallbackRoot) return null
@@ -268,7 +279,15 @@ async function init(): Promise<void> {
 
   injectKatexStyle()
   setTheme(data.pageTheme || 'light')
-  if (typeof data.sideWidth === 'number') setSidebarWidth(data.sideWidth)
+  setContentFontSize(data.fontSize)
+  if (
+    typeof data.sideWidth === 'number' &&
+    data.sideWidth !== LEGACY_DEFAULT_SIDE_WIDTH &&
+    data.sideWidth !== PREVIOUS_DEFAULT_SIDE_WIDTH &&
+    data.sideWidth > PREVIOUS_DEFAULT_SIDE_WIDTH_MAX
+  ) {
+    setSidebarWidth(data.sideWidth)
+  }
   BODY.classList.toggle(CN.SIDE_COLLAPSED, !!data.hiddenSide)
 
   const fileTreeRootURL = getFileTreeRootURL(data)
@@ -414,8 +433,11 @@ async function init(): Promise<void> {
   // Dark mode media query
   darkMQL.addEventListener('change', (e) => {
     if (data.pageTheme === 'auto') {
+      setTheme('auto')
+      updateSplashTheme('auto')
       renderMarkdown(currentRaw)
       renderToc()
+      updateOptionsMenuState()
     }
   })
 
@@ -452,7 +474,7 @@ async function init(): Promise<void> {
       case 'reload': window.location.reload(); break
       case 'updateMdPlugins': reloading = true; renderMarkdown(currentRaw); renderToc(); reloading = false; break
       case 'updatePageTheme': {
-        const prev = toTheme(data.pageTheme || 'light')
+        const prev = HTML.getAttribute(ROOT_THEME_ATTR)
         setTheme(value as Theme)
         const next = toTheme(value as Theme)
         if (data.mdPlugins?.includes('Mermaid') && prev !== next) {
@@ -463,8 +485,11 @@ async function init(): Promise<void> {
         break
       }
       case 'updateFileTreeOptions': if (fileTreeRootURL) renderFileTree(fileTreeRootURL); updateOptionsMenuState(); break
-      case 'updateCodeTheme':
-      case 'updateFontSize': renderMarkdown(currentRaw); renderToc(); break
+      case 'updateCodeTheme': renderMarkdown(currentRaw); renderToc(); break
+      case 'updateFontSize':
+        setContentFontSize(value as FontSize)
+        updateOptionsMenuState()
+        break
       case 'toggleRefresh': clearTimeout(pollTimer); if (value) window.location.reload(); break
       case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); break
       case 'toggleSide': {
@@ -744,6 +769,20 @@ async function init(): Promise<void> {
           <button type="button" data-theme="auto">Auto</button>
         </div>
       </div>
+      <div class="md-reader__options-group">
+        <div class="md-reader__options-slider-head">
+          <div class="md-reader__options-label">Font size</div>
+          <output data-font-size-output></output>
+        </div>
+        <input
+          class="md-reader__options-slider"
+          type="range"
+          min="0"
+          max="${Object.keys(FONT_SIZE_MAP).length - 1}"
+          step="1"
+          data-option="fontSize"
+        />
+      </div>
     `
 
     const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')
@@ -752,6 +791,16 @@ async function init(): Promise<void> {
     })
     optionsMenu.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((button) => {
       button.addEventListener('click', () => saveConfig('pageTheme', button.dataset.theme as Theme))
+    })
+    const fontSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="fontSize"]')
+    fontSlider?.addEventListener('input', () => {
+      const fontSize = getFontSizeAtIndex(Number(fontSlider.value))
+      setContentFontSize(fontSize)
+      data.fontSize = fontSize
+      updateOptionsMenuState()
+    })
+    fontSlider?.addEventListener('change', () => {
+      saveConfig('fontSize', getFontSizeAtIndex(Number(fontSlider.value)))
     })
     updateOptionsMenuState()
   }
@@ -762,6 +811,17 @@ async function init(): Promise<void> {
     optionsMenu.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((button) => {
       button.classList.toggle('active', button.dataset.theme === data.pageTheme)
     })
+    const fontSizes = Object.keys(FONT_SIZE_MAP) as FontSize[]
+    const fontSize = data.fontSize || 'Normal'
+    const fontSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="fontSize"]')
+    if (fontSlider) fontSlider.value = String(Math.max(0, fontSizes.indexOf(fontSize)))
+    const fontSizeOutput = optionsMenu.querySelector<HTMLOutputElement>('[data-font-size-output]')
+    if (fontSizeOutput) fontSizeOutput.value = `${FONT_SIZE_MAP[fontSize]}px`
+  }
+
+  function getFontSizeAtIndex(index: number): FontSize {
+    const fontSizes = Object.keys(FONT_SIZE_MAP) as FontSize[]
+    return fontSizes[Math.min(fontSizes.length - 1, Math.max(0, index))] || 'Normal'
   }
 
   function saveConfig<K extends keyof StorageData>(key: K, value: StorageData[K]): void {

@@ -44,7 +44,7 @@ const PLUGINS: Record<string, any[] | PluginFactory> = {
   Sup: [mSup],
   Ins: [mIns],
   Abbr: [mAbbr],
-  Katex: [mKatex],
+  Katex: [mKatex, { strict: false, throwOnError: false }],
   Mermaid: ({ theme }) => [
     mMermaid,
     { theme: getThemeMd(theme), themeVariables: undefined },

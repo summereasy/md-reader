@@ -47,6 +47,8 @@ export default defineConfig({
           if (chunk.name === 'md-renderer') return 'assets/md-renderer.js'
           return 'assets/[name]-[hash].js'
         },
+        // Disable chunk splitting for background — Chrome SW can't load cross-chunk ESM imports.
+        // Other entries (popup, options, content) handle code splitting fine.
         chunkFileNames: (chunk) => {
           // Put heavy deps (mermaid, katex) in assets/ for dynamic import
           return 'assets/[name]-[hash].js'

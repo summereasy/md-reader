@@ -19,8 +19,7 @@
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
   "background": {
-    "service_worker": "background/index.mjs",
-    "type": "module"
+    "service_worker": "background/index.mjs"
   },
   "action": {
     "default_title": "__MSG_ext_name__",

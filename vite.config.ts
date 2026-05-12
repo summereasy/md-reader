@@ -1,4 +1,4 @@
-import { defineConfig, type UserConfig } from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
 import { resolve } from 'path'
@@ -6,8 +6,7 @@ import { copyFileSync, cpSync, mkdirSync } from 'fs'
 
 const ROOT = process.cwd()
 
-// Shared config for extension UI (popup, options, background)
-const uiConfig: UserConfig = {
+export default defineConfig({
   plugins: [
     vue(),
     UnoCSS(),
@@ -38,43 +37,26 @@ const uiConfig: UserConfig = {
         popup: resolve(ROOT, 'popup.html'),
         options: resolve(ROOT, 'options.html'),
         background: resolve(ROOT, 'src/background/index.ts'),
+        content: resolve(ROOT, 'src/content/index.ts'),
+        'md-renderer': resolve(ROOT, 'src/content/renderer-entry.ts'),
       },
       output: {
         entryFileNames: (chunk) => {
           if (chunk.name === 'background') return 'background/index.mjs'
+          if (chunk.name === 'content') return 'content/index.global.js'
+          if (chunk.name === 'md-renderer') return 'assets/md-renderer.js'
           return 'assets/[name]-[hash].js'
         },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
-      },
-    },
-    outDir: 'dist',
-    emptyOutDir: false, // Don't clean, content config will handle that
-  },
-}
-
-// Separate config for content script — must be a single self-contained IIFE
-const contentConfig: UserConfig = {
-  resolve: {
-    alias: {
-      '@': resolve(ROOT, 'src'),
-      'cytoscape/dist/cytoscape.umd.js': resolve(ROOT, 'node_modules/.pnpm/cytoscape@3.33.3/node_modules/cytoscape/dist/cytoscape.esm.mjs'),
-    },
-  },
-  build: {
-    commonjsOptions: { include: [/node_modules/] },
-    lib: {
-      entry: resolve(ROOT, 'src/content/index.ts'),
-      formats: ['iife'],
-      name: 'MdReader',
-      fileName: () => 'content/index.global.js',
-    },
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: true,
+        chunkFileNames: (chunk) => {
+          // Put heavy deps (mermaid, katex) in assets/ for dynamic import
+          return 'assets/[name]-[hash].js'
+        },
         assetFileNames: (asset) => {
           if (asset.name?.endsWith('.css')) {
-            return 'content/style.css'
+            const originals = asset.originalFileNames ?? []
+            if (originals.some((f: string) => f.includes('content/'))) {
+              return 'content/style.css'
+            }
           }
           return 'assets/[name]-[hash].[ext]'
         },
@@ -83,9 +65,4 @@ const contentConfig: UserConfig = {
     outDir: 'dist',
     emptyOutDir: true,
   },
-}
-
-export default defineConfig(({ mode }) => {
-  // Build content script first (cleans dist), then build UI (adds to dist)
-  return mode === 'content' ? contentConfig : uiConfig
 })

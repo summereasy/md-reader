@@ -13,6 +13,12 @@
 
   const rendererUrl = chrome.runtime.getURL('assets/md-renderer.js')
   import(rendererUrl)
-    .then((mod) => mod.default())
+    .then(() => {
+      if (typeof (window as any).__mdReaderInit === 'function') {
+        ;(window as any).__mdReaderInit()
+      } else {
+        console.error('[md-reader] renderer loaded but __mdReaderInit not found')
+      }
+    })
     .catch((err) => console.error('[md-reader] Failed to load renderer:', err))
 })()

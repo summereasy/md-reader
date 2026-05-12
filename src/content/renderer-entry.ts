@@ -104,6 +104,9 @@ export default function initContentScript(): void {
   init()
 }
 
+// Also expose via global for dynamic import without export issues
+;(window as any).__mdReaderInit = initContentScript
+
 async function init(): Promise<void> {
   const rawData = await storage.get()
   const data = getDefaultData(rawData)

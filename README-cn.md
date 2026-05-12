@@ -1,88 +1,85 @@
-# Markdown Reader
+# md-viewer
 
-<img alt="Markdown Reader Logo" src="https://raw.githubusercontent.com/md-reader/md-reader/main/src//images/logo-stroke.svg" align="right" width="120">
+[English](./README.md) | 简体中文
 
-[English](./README.md) | 中文 | [한국어](./README-ko.md)
+`md-viewer` 是一个独立开源的浏览器 Markdown 阅读扩展，适用于 Chrome、Brave 以及其他 Chromium 系浏览器。
 
-https://md-reader.github.io
+它基于 [md-reader/md-reader](https://github.com/md-reader/md-reader) 最后公开的 MIT 授权源码继续演进，并对阅读体验、侧边栏导航、本地文件浏览、弹出窗口 UI 和现代构建流程做了较多更新。
 
-[![](https://badgen.net/chrome-web-store/v/medapdbncneneejhbgcjceippjlfkmkg?icon=chrome&color=607cd2)](https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg) [![](https://badgen.net/chrome-web-store/stars/medapdbncneneejhbgcjceippjlfkmkg?icon=chrome&color=607cd2)](https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg) [![](https://badgen.net/chrome-web-store/users/medapdbncneneejhbgcjceippjlfkmkg?icon=chrome&color=607cd2)](https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg)
+本项目不是官方 Markdown Reader 扩展，也不由官方扩展维护者维护或背书。
 
-Markdown Reader 是一款强大的浏览器扩展程序，能让你在浏览器中快捷的预览 Markdown 文档。
+## 为什么会有这个 Fork
 
-- **文档格式**: 支持预览 `file://`、`http://`、`https://` 协议以及 `.md`、`.mkd`、`.mdx`、`.markdown` 等扩展名的文件:
-  - `https://example.com/example.md`（在线 Markdown 链接）
-  - `file:///Users/my-project/readme.markdown`（本地 Markdown 文件，[\*需要开启特定权限](#允许本地文件访问权限)）
-- **语法插件**: 支持表情符号、上标/下标、复选框、数学公式、流程图、甘特图、目录、插入内容、缩写、注释、提醒等。
-- **主题**: 提供高质量的明暗主题和代码高亮功能。
-- **实时刷新**: 支持实时文档变更和居中显示，提升阅读体验。
-- **文档组织**: 包含侧边栏目录、原始内容预览和图像媒体预览。
-- **快捷键**: 支持通过浏览器扩展快捷键快速调用功能。
+我一直很喜欢 Markdown Reader 这个扩展。原项目曾经以 MIT License 开源发布，感谢 Bener 对开源社区的贡献。
 
-![banner](./example/example-1.png)
+后来官方 3.x 版本不再继续以开源形式维护，因此这个项目基于最后公开的 MIT 授权源码，以及社区维护版本的思路，继续做一个独立、开放的浏览器 Markdown 阅读扩展。
 
-默认的主题样式存储在 https://github.com/md-reader/theme 中。如果你想查看或自定义主题样式，可以访问该链接并根据需要调整 CSS 文件。
+本项目没有使用官方 3.x 的闭源源代码；相关改进是通过观察公开可见的产品行为，并结合开源代码重新实现的。
 
-## 安装
+当前 logo 和部分内部 class name 仍沿用原项目脉络，后续有时间会再做视觉和命名清理。
 
-### A. 在浏览器应用商店安装（需要机智上网）
+## 功能
 
-<a href="https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg" target="_blank"><img src="./src/images/Chrome.png" style="width:50px"/></a>
-<a href="https://microsoftedge.microsoft.com/addons/detail/markdown-reader/djnplooklihmkcioemdjfcednfkpiodc" target="_blank"><img src="./src/images/Edge.png" style="width:50px"/></a>
-<a href="https://addons.mozilla.org/firefox/addon/markdown-reader-ext/" target="_blank"><img src="./src/images/Firefox.png" style="width:50px"/></a>
-<a href="https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg" target="_blank"><img src="./src/images/Arc.png" style="width:50px"/></a>
+- 支持从 `http://`、`https://`、`file://` 预览 `.md`、`.mdx`、`.mkd`、`.markdown`、`.txt` 文件。
+- 支持常见 Markdown 扩展: emoji、上标/下标、任务列表、表格、alert、custom containers、KaTeX 数学公式、Mermaid 图表等。
+- 提供可拖动宽度的侧边栏，支持 Files 和 TOC 两种视图。
+- 支持在同一个本地目录树内切换 Markdown 文件，不刷新整个扩展 UI。
+- 支持 light、dark、auto 主题。
+- 支持在页面内的快速设置菜单中调整阅读字号，并持久化保存。
+- 支持一键复制代码块。
+- 支持图片点击放大预览。
+- 支持可选的自动刷新。
+- 支持通过浏览器快捷键切换侧边栏、居中布局、自动刷新和主题。
 
-### B. 本地构建
+## 从源码安装
 
-以 Chrome 为例：
+```bash
+git clone https://github.com/summereasy/md-reader.git
+cd md-reader
+pnpm install
+pnpm build
+```
 
-1. 克隆 `md-reader` 仓库到本地并编译:
+构建完成后，将 `dist/` 作为 unpacked extension 加载到浏览器。
 
-   ```bash
-   # 克隆本仓库
-   git clone https://github.com/md-reader/md-reader.git && cd md-reader
+## 在 Chrome 或 Brave 中加载
 
-   # 安装依赖
-   pnpm install
+1. 打开 `chrome://extensions` 或 `brave://extensions`。
+2. 开启 `Developer mode`。
+3. 点击 `Load unpacked`。
+4. 选择本仓库下的 `dist/` 目录。
+5. 如果需要阅读本地 Markdown 文件，请进入扩展详情页并开启 `Allow access to file URLs`。
 
-   # 构建扩展程序
-   pnpm build
-   ```
+## 快捷键
 
-2. 构建成功后，`md-reader/dist` 文件夹会生成 `md-reader-xxx.zip` 扩展程序包。
+| 快捷键 | 动作 |
+| --- | --- |
+| `Alt+Shift+B` | 切换侧边栏 |
+| `Alt+Shift+C` | 切换居中布局 |
+| `Alt+Shift+R` | 切换自动刷新 |
+| `Alt+Shift+T` | 切换主题 |
 
-3. 进入 Chrome 的扩展管理页，将扩展程序拖拽进浏览器即可安装。
+## 开发
 
-## 使用
+```bash
+pnpm install
+pnpm dev
+pnpm build
+```
 
-以 Chrome 为例：
+项目使用 Vue 3、TypeScript、Vite、UnoCSS、TDesign Vue Next、`markdown-it`、Highlight.js、KaTeX 和 Mermaid 构建。
 
-安装完成后，此时 Chrome 已经可以预览在线的 markdown 文档了，但是还不可以预览本地的 markdown 文档，需要开启 Chrome 扩展的文件访问权限。
+## 致谢
 
-### 允许本地文件访问权限
+感谢 [Bener](https://github.com/Heroor) 创建最初的 Markdown Reader 项目，并以 MIT License 发布。
 
-> 由于 Chrome 出于安全考虑，默认关闭了扩展程序对本地文件的访问权限，所以在安装完插件后需要手动开启权限，这样就可以正常预览本地 markdown 文件了。
-
-在 Chrome 扩展程序管理页中，找到刚刚安装的 `Markdown Reader`，点击 `详细信息`，在详情页找到 `允许访问文件网址` 选项，然后切换为开启状态即可（请放心：`Markdown Reader` 只对 markdown 文件进行读取和展示的操作，不会修改和上传用户文件数据）。
-
-<br/>
-
-现在所有工作都完成啦~！ヾ(◍°∇°◍)ﾉ
-
-打开这个在线文档试一下效果吧：[示例文档](https://raw.githubusercontent.com/md-reader/md-reader/main/example/example.md)；你还可以试试直接将 Markdown 文档 **拖进浏览器**！
-
-欢迎提出你的使用问题和建议。
-
-点一颗星星（star）支持一下也是对我的鼓励哦~！
-
-## Markdown Reader 官方微信公众号
-
-扫码关注获取最新动态与技术支持：
-
-<img src="./src/images/mp-qrcode.jpg" alt="" style="width:220px"/>
+这个 fork 也参考了公开的社区维护版本和公开可观察的产品行为，但实现基于开源代码独立完成。
 
 ## 协议
 
-License [MIT](https://github.com/md-reader/md-reader/blob/main/LICENSE)
+MIT。见 [LICENSE](./LICENSE)。
 
-© 2018-present, [Bener](https://github.com/Heroor)
+原项目版权声明会继续保留:
+
+- Copyright (c) 2018-present Bener
+- Copyright (c) 2026-present Wei / summereasy

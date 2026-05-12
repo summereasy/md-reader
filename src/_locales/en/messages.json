@@ -1,10 +1,10 @@
 {
   "ext_name": {
-    "message": "Markdown Reader",
+    "message": "md-viewer",
     "description": "Preview markdown files in your browser."
   },
   "ext_desc": {
-    "message": "The best way to preview Markdown files in your browser."
+    "message": "An open-source Markdown viewer for your browser."
   },
   "command_toggle_side": {
     "message": "Toggle sidebar"

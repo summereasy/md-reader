@@ -1,84 +1,83 @@
-# Markdown Reader
+# md-viewer
 
-<img alt="Markdown Reader Logo" src="https://raw.githubusercontent.com/md-reader/md-reader/main/src/images/logo-stroke.svg" align="right" width="120">
+English | [简体中文](./README-cn.md)
 
-English | [中文](./README-cn.md) | [한국어](./README-ko.md)
+`md-viewer` is an independent open-source browser extension for reading Markdown files directly in Chrome, Brave, and other Chromium-based browsers.
 
-A powerful browser extension for previewing Markdown files in your **Chrome** or **Brave** browser.
+It is based on the last publicly available MIT-licensed source code of [md-reader/md-reader](https://github.com/md-reader/md-reader), with substantial updates to the rendering experience, sidebar navigation, local file browsing, popup UI, and modern build setup.
 
-> **This is an open-source Vue 3 rewrite of Markdown Reader (v3.x).**
-> Original Svelte 2.x source code is on the `main` branch.
-> 
-> Original author: **Bener** — [https://md-reader.github.io](https://md-reader.github.io)
+This project is not affiliated with, endorsed by, or maintained by the official Markdown Reader extension.
 
----
+## Why This Fork Exists
 
-## ✨ Features
+I have used and liked Markdown Reader for a long time. The original project was released under the MIT License, and I appreciate Bener's contribution to the open-source community.
 
-- **Rich Document Support**: Preview `.md`, `.mdx`, `.mkd`, `.markdown`, `.txt` files via `http://`, `https://`, `file://`
-- **Syntax Plugins**: Emoji, Sup/Sub, Katex Math, Mermaid Diagrams, TOC, Task Lists, Alerts, and more
-- **Themes**: Light / Dark / Auto mode with code highlighting
-- **Sidebar Navigation**: Auto-generated table of contents with scroll tracking
-- **Image Viewer**: Click to zoom images in lightbox
-- **Code Block Copy**: One-click code block copy
-- **Auto Refresh**: Watch file changes and auto-reload
-- **Keyboard Shortcuts**: `Alt+Shift+B/C/R/T` for quick actions
-- **Vue 3 + TDesign**: Clean modern UI for popup and settings pages
+After the official 3.x extension moved away from open-source development, this project continues the idea as an independent open-source fork. The improvements here are reimplemented by observing public behavior and by building on MIT-licensed source code and community-maintained references. No closed-source 3.x source code is used.
 
-## 🚀 Quick Start
+The logo and some internal class names still come from the original project lineage for now. They may be replaced in a future cleanup.
 
-### Install from Source
+## Features
+
+- Preview `.md`, `.mdx`, `.mkd`, `.markdown`, and `.txt` files from `http://`, `https://`, and `file://` URLs.
+- Render common Markdown extensions: emoji, superscript/subscript, task lists, tables, alerts, custom containers, KaTeX math, Mermaid diagrams, and more.
+- Use a resizable sidebar with Files and TOC views.
+- Browse local Markdown files from the same directory tree without reloading the extension UI.
+- Switch between light, dark, and auto themes.
+- Adjust reading font size from the in-page quick settings menu.
+- Copy code blocks with one click.
+- Zoom images in a lightweight viewer.
+- Auto-refresh source files when enabled.
+- Use keyboard shortcuts for sidebar, centered layout, refresh, and theme controls.
+
+## Install From Source
 
 ```bash
-# Clone this repository
-git clone https://github.com/summereasy/md-reader.git && cd md-reader
-
-# Install dependencies (pnpm recommended)
+git clone https://github.com/summereasy/md-reader.git
+cd md-reader
 pnpm install
-
-# Build the extension
 pnpm build
 ```
 
-Then load `dist/` as an unpacked extension in `chrome://extensions`.
+Then load `dist/` as an unpacked extension.
 
-### Load in Brave/Chrome
+## Load In Chrome Or Brave
 
-1. Go to `chrome://extensions` (or `brave://extensions`)
-2. Enable **Developer mode** (top right)
-3. Click **Load unpacked** and select the `dist/` folder
-4. Enable **Allow access to file URLs** for local markdown preview
+1. Open `chrome://extensions` or `brave://extensions`.
+2. Enable `Developer mode`.
+3. Click `Load unpacked`.
+4. Select the `dist/` folder from this repository.
+5. For local Markdown files, open the extension details page and enable `Allow access to file URLs`.
 
-## ⌨️ Shortcuts
+## Keyboard Shortcuts
 
 | Shortcut | Action |
-|----------|--------|
+| --- | --- |
 | `Alt+Shift+B` | Toggle sidebar |
 | `Alt+Shift+C` | Toggle centered layout |
 | `Alt+Shift+R` | Toggle auto refresh |
-| `Alt+Shift+T` | Toggle theme (light/dark) |
+| `Alt+Shift+T` | Toggle theme |
 
-## 🛠 Tech Stack
+## Development
 
-- **Framework**: Vue 3 + TypeScript
-- **UI Library**: TDesign Vue Next
-- **Build Tool**: Vite + UnoCSS
-- **Markdown Engine**: markdown-it + highlight.js + Katex + Mermaid
+```bash
+pnpm install
+pnpm dev
+pnpm build
+```
 
-## 📦 Dependencies
+The extension is built with Vue 3, TypeScript, Vite, UnoCSS, TDesign Vue Next, `markdown-it`, Highlight.js, KaTeX, and Mermaid.
 
-The markdown rendering pipeline uses:
-- [markdown-it](https://github.com/markdown-it/markdown-it) — core parser
-- [highlight.js](https://highlightjs.org/) — code syntax highlighting
-- [KaTeX](https://katex.org/) — math rendering
-- [Mermaid](https://mermaid.js.org/) — diagram rendering
-- Various markdown-it plugins for emoji, TOC, task lists, alerts, etc.
+## Acknowledgements
 
-## 📄 License
+Thanks to [Bener](https://github.com/Heroor) for creating the original Markdown Reader project and releasing it under the MIT License.
 
-MIT © 2018-present [Bener](https://github.com/Heroor)
+This fork also benefited from public community-maintained implementations and behavior comparisons while keeping the implementation based on open-source code.
 
-The original 2.x version was created by Bener of the `md-reader` organization.  
-This Vue 3 rewrite preserves the MIT license and credits the original author.
+## License
 
-This is an independent open-source rewrite. For the official extension, visit [md-reader.github.io](https://md-reader.github.io).
+MIT. See [LICENSE](./LICENSE).
+
+Original project copyright is retained:
+
+- Copyright (c) 2018-present Bener
+- Copyright (c) 2026-present Wei / summereasy

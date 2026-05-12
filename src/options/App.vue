@@ -75,8 +75,8 @@ watch(() => data.value.language, (v) => { if (v) updateStorage('language', v) })
 <template>
   <div class="max-w-2xl mx-auto px-4 py-8" v-if="!loading">
     <div class="mb-6">
-      <h1 class="text-2xl font-bold m-0">Markdown Reader Settings</h1>
-      <p class="text-sm text-gray-500 mt-1">v3.0.0 · MIT License</p>
+      <h1 class="text-2xl font-bold m-0">md-viewer Settings</h1>
+      <p class="text-sm text-gray-500 mt-1">v1.0.0 · MIT License</p>
     </div>
 
     <!-- General -->
@@ -170,8 +170,8 @@ watch(() => data.value.language, (v) => { if (v) updateStorage('language', v) })
     <!-- About -->
     <TCard title="About" class="mb-4">
       <div class="text-sm text-gray-500 space-y-1">
-        <p>Markdown Reader — preview markdown files in your browser.</p>
-        <p>Original by <strong>Bener</strong> (MIT License). Vue 3 rewrite.</p>
+        <p>md-viewer — read Markdown files in your browser.</p>
+        <p>Independent open-source fork based on the original MIT-licensed project by <strong>Bener</strong>.</p>
         <p>
           <a
             href="https://github.com/summereasy/md-reader"

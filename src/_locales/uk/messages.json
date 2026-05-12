@@ -1,6 +1,6 @@
 {
-  "ext_name": { "message": "Markdown Reader" },
-  "ext_desc": { "message": "Найкращий спосіб перегляду Markdown у браузері." },
+  "ext_name": { "message": "md-viewer" },
+  "ext_desc": { "message": "Open-source Markdown viewer for your browser." },
   "command_toggle_side": { "message": "Перемкнути бічну панель" },
   "command_toggle_centered": { "message": "Перемкнути центрування" },
   "command_toggle_refresh": { "message": "Перемкнути автооновлення" },

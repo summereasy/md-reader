@@ -1,10 +1,10 @@
 {
   "ext_name": {
-    "message": "Markdown Reader",
+    "message": "md-viewer",
     "description": "在浏览器中预览 Markdown 文件。"
   },
   "ext_desc": {
-    "message": "在浏览器中预览 Markdown 的最佳方式。"
+    "message": "开源的浏览器 Markdown 阅读扩展。"
   },
   "command_toggle_side": {
     "message": "切换侧边栏"

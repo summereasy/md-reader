@@ -1,20 +1,20 @@
 {
-  "name": "md-reader",
-  "version": "3.0.0",
+  "name": "md-viewer",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "author": "Bener",
+  "author": "summereasy",
   "license": "MIT",
-  "description": "A markdown reader extension for Chrome — Vue 3 + TDesign rewrite",
-  "homepage": "https://md-reader.github.io",
+  "description": "An independent open-source Markdown viewer extension for Chromium browsers",
+  "homepage": "https://github.com/summereasy/md-reader",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/summereasy/md-reader.git"
   },
   "keywords": [
-    "md-reader",
+    "md-viewer",
     "markdown",
-    "markdown reader",
+    "markdown viewer",
     "chrome extension"
   ],
   "scripts": {

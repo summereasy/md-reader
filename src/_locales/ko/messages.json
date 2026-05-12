@@ -1,6 +1,6 @@
 {
-  "ext_name": { "message": "Markdown Reader" },
-  "ext_desc": { "message": "브라우저에서 Markdown을 미리보기 위한 가장 좋은 방법입니다." },
+  "ext_name": { "message": "md-viewer" },
+  "ext_desc": { "message": "브라우저용 오픈소스 Markdown 뷰어입니다." },
   "command_toggle_side": { "message": "사이드바 전환" },
   "command_toggle_centered": { "message": "중앙 정렬 전환" },
   "command_toggle_refresh": { "message": "자동 새로고침 전환" },

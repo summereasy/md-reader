@@ -85,8 +85,8 @@ watch(
       <div class="popup__brand">
         <img src="../assets/logo-stroke.png" alt="" class="popup__logo">
         <div>
-          <h1>MD-READER</h1>
-          <p>Markdown preview extension</p>
+          <h1>md-viewer</h1>
+          <p>Open-source Markdown viewer</p>
         </div>
       </div>
       <button type="button" class="popup__link" @click="openGitHub">GitHub</button>
@@ -189,7 +189,7 @@ watch(
       <button type="button" class="popup__settings" @click="openOptions">
         Full Settings
       </button>
-      <span>v3.0.0</span>
+      <span>v1.0.0</span>
     </footer>
   </main>
 </template>

@@ -129,5 +129,3 @@ chrome.commands.onCommand.addListener(async (command) => {
   const handler = handlers[command]
   if (handler) await handler()
 })
-
-chrome.runtime.setUninstallURL('https://github.com/summereasy/md-reader/discussions')

@@ -1,6 +1,6 @@
 {
-  "ext_name": { "message": "Markdown Reader" },
-  "ext_desc": { "message": "ブラウザで Markdown をプレビューするための最適な方法です。" },
+  "ext_name": { "message": "md-viewer" },
+  "ext_desc": { "message": "ブラウザ向けのオープンソース Markdown ビューアです。" },
   "command_toggle_side": { "message": "サイドバーの切り替え" },
   "command_toggle_centered": { "message": "中央揃えの切り替え" },
   "command_toggle_refresh": { "message": "自動更新の切り替え" },

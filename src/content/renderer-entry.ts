@@ -100,7 +100,7 @@ function createSidebar(): HTMLElement {
   return side
 }
 
-export function initContentScript(): void {
+export default function initContentScript(): void {
   init()
 }
 

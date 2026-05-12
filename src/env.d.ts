@@ -5,3 +5,11 @@ declare module '*.vue' {
   const component: DefineComponent<{}, {}, any>
   export default component
 }
+
+interface Window {
+  __mdReaderSplash?: {
+    setTheme: (theme: 'light' | 'dark') => void
+    remove: () => void
+  }
+  __mdReaderInit?: () => void
+}

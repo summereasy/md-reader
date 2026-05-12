@@ -70,6 +70,14 @@ blockCopyPlugin()
 imgViewerPlugin()
 const eventBus = getEventBus()
 
+function updateSplashTheme(theme: Theme): void {
+  window.__mdReaderSplash?.setTheme(toTheme(theme))
+}
+
+function removeSplash(): void {
+  window.__mdReaderSplash?.remove()
+}
+
 function injectKatexStyle(): void {
   if (document.getElementById(KATEX_STYLE_ID)) return
 
@@ -240,7 +248,11 @@ async function init(): Promise<void> {
   const rawData = await storage.get()
   const data = getDefaultData(rawData)
   console.log('[md-reader] init — data:', JSON.stringify({ enable: data.enable, theme: data.pageTheme, plugins: data.mdPlugins?.length }))
-  if (!data.enable) return
+  updateSplashTheme(data.pageTheme || 'light')
+  if (!data.enable) {
+    removeSplash()
+    return
+  }
 
   injectKatexStyle()
   setTheme(data.pageTheme || 'light')
@@ -472,6 +484,7 @@ async function init(): Promise<void> {
   meta.content = 'no-referrer'
   HEAD.appendChild(meta)
   BODY.classList.add('md-reader')
+  removeSplash()
 
   function renderSide(): void {
     renderSidebar(mdSide, mdContent, {

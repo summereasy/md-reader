@@ -27,7 +27,6 @@ const BODY = document.body
 
 const HEADERS = 'h1, h2, h3, h4, h5, h6'
 const ROOT_THEME_ATTR = 'data-mdr-theme'
-const ROOT_THEME_DISABLED_ATTR = 'data-mdr-theme-disabled'
 const SIDE_WIDTH_VAR = '--mdr-side-width'
 const CONTENT_FONT_SIZE_VAR = '--mdr-content-font-size'
 const SIDE_WIDTH_STORAGE_KEY = 'sideWidth'
@@ -62,6 +61,7 @@ const CN = {
   SIDE_EXPANDED: 'side-expanded',
   HEAD_ANCHOR: `${PREFIX}head-anchor`,
   CENTERED: 'centered',
+  RAW_CONTENT: `${PREFIX}raw-content`,
 }
 
 const ICONS = {
@@ -306,6 +306,11 @@ async function init(): Promise<void> {
     plugins: data.mdPlugins,
   })
 
+  const rawContent = document.createElement('pre')
+  rawContent.className = CN.RAW_CONTENT
+  rawContent.textContent = mdRaw
+  rawContent.hidden = true
+
   mdContent.addEventListener('click', (e) => {
     eventBus.emit('click', e.target, e)
   })
@@ -313,7 +318,7 @@ async function init(): Promise<void> {
   // Main body
   const mdBody = document.createElement('main')
   mdBody.className = CN.BODY
-  mdBody.appendChild(mdContent)
+  mdBody.append(mdContent, rawContent)
 
   // Sidebar
   const mdSide = createSidebar()
@@ -351,14 +356,12 @@ async function init(): Promise<void> {
   rawBtn.className = `${CN.BTN} ${CN.BTN_CODE_TOGGLE}`
   rawBtn.title = 'Toggle raw'
   rawBtn.innerHTML = ICONS.code
+  rawBtn.setAttribute('aria-pressed', 'false')
   rawBtn.addEventListener('click', () => {
-    const toggling = HTML.hasAttribute(ROOT_THEME_DISABLED_ATTR)
-    BODY.classList.toggle('md-reader')
-    mdBody.style.display = toggling ? '' : 'none'
-    mdSide.style.display = toggling ? '' : 'none'
-    if (rawPre) rawPre.style.display = toggling ? 'none' : ''
-    if (toggling) HTML.removeAttribute(ROOT_THEME_DISABLED_ATTR)
-    else HTML.setAttribute(ROOT_THEME_DISABLED_ATTR, '')
+    const showRaw = rawContent.hidden
+    rawContent.hidden = !showRaw
+    mdContent.hidden = showRaw
+    rawBtn.setAttribute('aria-pressed', String(showRaw))
   })
 
   const topBtn = document.createElement('button')
@@ -452,6 +455,7 @@ async function init(): Promise<void> {
           } else if (currentRaw !== res) {
             currentRaw = res
             renderMarkdown(res)
+            renderRaw(res)
             renderToc()
             if (rawPre) rawPre.textContent = res
           }
@@ -533,6 +537,10 @@ async function init(): Promise<void> {
       theme: toTheme(data.pageTheme || 'light'),
       plugins: data.mdPlugins,
     })
+  }
+
+  function renderRaw(raw: string): void {
+    rawContent.textContent = raw
   }
 
   function renderSide(): void {
@@ -741,6 +749,7 @@ async function init(): Promise<void> {
       currentFileURL = normalizeFileURL(url)
       currentRaw = raw
       renderMarkdown(raw)
+      renderRaw(raw)
       renderToc()
       updateFileTreeActive(currentFileURL)
       if (rawPre) rawPre.textContent = raw

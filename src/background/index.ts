@@ -17,7 +17,7 @@ async function storageGet(keys?: string | string[] | null): Promise<Record<strin
 // Message routing
 interface MessagePayload {
   action: string
-  data?: { key: string; value: unknown }
+  data?: { key: string; value: unknown; url?: string }
 }
 
 const actionMap: Record<string, string> = {
@@ -29,6 +29,7 @@ const actionMap: Record<string, string> = {
   codeTheme: 'updateCodeTheme',
   fontSize: 'updateFontSize',
   hiddenSide: 'toggleSide',
+  hideDotFiles: 'updateFileTreeOptions',
 }
 
 function updatePage(key: string, value?: unknown): void {
@@ -55,6 +56,17 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
     case 'fetch': {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const url = tabs.find((t) => t.active)?.url
+      if (!url) return 'Error: URL is undefined.'
+      try {
+        const res = await fetch(url)
+        return res.text()
+      } catch (err) {
+        console.error(err)
+        return (err as Error).message
+      }
+    }
+    case 'directory': {
+      const url = data?.url
       if (!url) return 'Error: URL is undefined.'
       try {
         const res = await fetch(url)

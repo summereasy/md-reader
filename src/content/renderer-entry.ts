@@ -7,10 +7,15 @@ import type { StorageData, Theme } from '@/shared/types'
 import { getEventBus } from './plugins/event'
 import blockCopyPlugin from './plugins/block-copy'
 import imgViewerPlugin from './plugins/img-viewer'
+import {
+  getFileName,
+  getParentDirectoryURL,
+  parseDirectoryListing,
+  type FileTreeEntry,
+} from './file-tree'
 import './style.css'
 
-// CSS prefix
-const PREFIX = 'mdr-'
+const PREFIX = 'md-reader__'
 
 // DOM refs
 const HTML = document.documentElement
@@ -20,20 +25,31 @@ const BODY = document.body
 const HEADERS = 'h1, h2, h3, h4, h5, h6'
 const ROOT_THEME_ATTR = 'data-mdr-theme'
 const ROOT_THEME_DISABLED_ATTR = 'data-mdr-theme-disabled'
+const SIDE_WIDTH_VAR = '--mdr-side-width'
+const SIDE_WIDTH_STORAGE_KEY = 'sideWidth'
 const darkMQL = window.matchMedia('(prefers-color-scheme: dark)')
+
+interface TocItem {
+  head: HTMLElement
+  text: string
+  encoded: string
+  level: number
+  li: HTMLElement
+  children: TocItem[]
+}
 
 const CN = {
   BODY: `${PREFIX}body`,
   SIDE: `${PREFIX}side`,
-  SIDE_ACTIVE: `${PREFIX}side-active`,
-  CONTENT: `${PREFIX}content`,
-  BTN_WRAP: `${PREFIX}btn-wrap`,
+  SIDE_ACTIVE: `${PREFIX}side-li--active`,
+  CONTENT: `${PREFIX}markdown-content`,
+  BTN_WRAP: `${PREFIX}button-wrap`,
   BTN: `${PREFIX}btn`,
-  BTN_CODE_TOGGLE: `${PREFIX}btn-code-toggle`,
-  BTN_SIDE_EXPAND: `${PREFIX}btn-side-expand`,
-  BTN_GO_TOP: `${PREFIX}btn-go-top`,
-  SIDE_COLLAPSED: `${PREFIX}side-collapsed`,
-  SIDE_EXPANDED: `${PREFIX}side-expanded`,
+  BTN_CODE_TOGGLE: `${PREFIX}btn--code-toggle`,
+  BTN_SIDE_EXPAND: `${PREFIX}btn--side-expand`,
+  BTN_GO_TOP: `${PREFIX}btn--go-top`,
+  SIDE_COLLAPSED: 'side-collapsed',
+  SIDE_EXPANDED: 'side-expanded',
   HEAD_ANCHOR: `${PREFIX}head-anchor`,
   CENTERED: 'centered',
 }
@@ -66,31 +82,29 @@ function rerender(data: StorageData, mdContent: HTMLElement): void {
   })
 }
 
-function renderSidebar(side: HTMLElement, content: HTMLElement): void {
-  const idCache: Record<string, number> = Object.create(null)
-  side.innerHTML = ''
-  const heads = Array.from(content.querySelectorAll(HEADERS))
-  for (const head of heads) {
-    const text = (head.textContent || '').trim()
-    const encoded = (function unique(key: string): string {
-      if (key in idCache) return unique(`${key}-${idCache[key]++}`)
-      idCache[key] = 1
-      return key
-    })(encodeURIComponent(text.toLowerCase().replace(/\s+/g, '-')))
-    head.setAttribute('id', encoded)
-    const anchor = document.createElement('a')
-    anchor.className = CN.HEAD_ANCHOR
-    anchor.href = `#${encoded}`
-    anchor.textContent = '#'
-    head.insertBefore(anchor, head.firstChild)
-    const link = document.createElement('a')
-    link.title = text
-    link.href = `#${encoded}`
-    link.textContent = text
-    const li = document.createElement('li')
-    li.className = `${CN.SIDE}-${head.tagName.toLowerCase()}`
-    li.appendChild(link)
-    side.appendChild(li)
+function renderSidebar(
+  side: HTMLElement,
+  content: HTMLElement,
+  slots?: {
+    sideSwitch: HTMLElement
+    fileTree: HTMLElement
+    tocTree: HTMLElement
+    tocList: HTMLElement
+    fileTreeRootURL: string | null
+    updateSideMode: (mode: 'files' | 'toc') => void
+    sideMode: 'files' | 'toc'
+  },
+): void {
+  const list = slots?.tocList ?? side
+  list.innerHTML = ''
+  buildTocTree(content).forEach((item) => list.appendChild(item.li))
+
+  if (slots) {
+    side.innerHTML = ''
+    side.appendChild(slots.sideSwitch)
+    if (slots.fileTreeRootURL) side.appendChild(slots.fileTree)
+    side.appendChild(slots.tocTree)
+    slots.updateSideMode(slots.sideMode)
   }
 }
 
@@ -98,6 +112,95 @@ function createSidebar(): HTMLElement {
   const side = document.createElement('ul')
   side.className = CN.SIDE
   return side
+}
+
+function isDotEntry(entry: FileTreeEntry): boolean {
+  return entry.name.startsWith('.')
+}
+
+function buildTocTree(content: HTMLElement): TocItem[] {
+  const idCache: Record<string, number> = Object.create(null)
+  const roots: TocItem[] = []
+  const stack: TocItem[] = []
+
+  Array.from(content.querySelectorAll<HTMLElement>(HEADERS)).forEach((head) => {
+    const text = (head.textContent || '').replace(/^#/, '').trim()
+    const encoded = (function unique(key: string): string {
+      if (key in idCache) return unique(`${key}-${idCache[key]++}`)
+      idCache[key] = 1
+      return key
+    })(encodeURIComponent(text.toLowerCase().replace(/\s+/g, '-')))
+    const level = Number(head.tagName.slice(1))
+
+    head.querySelector(`.${CN.HEAD_ANCHOR}`)?.remove()
+    head.setAttribute('id', encoded)
+    const anchor = document.createElement('a')
+    anchor.className = CN.HEAD_ANCHOR
+    anchor.href = `#${encoded}`
+    anchor.textContent = '#'
+    head.insertBefore(anchor, head.firstChild)
+
+    const item: TocItem = {
+      head,
+      text,
+      encoded,
+      level,
+      li: document.createElement('li'),
+      children: [],
+    }
+    item.li.className = `${CN.SIDE}-${head.tagName.toLowerCase()} md-reader__toc-item`
+    item.li.dataset.level = String(level)
+
+    while (stack.length && stack[stack.length - 1].level >= level) {
+      stack.pop()
+    }
+    const parent = stack[stack.length - 1]
+    if (parent) parent.children.push(item)
+    else roots.push(item)
+    stack.push(item)
+  })
+
+  roots.forEach(renderTocItem)
+  return roots
+}
+
+function renderTocItem(item: TocItem): void {
+  const row = document.createElement('div')
+  row.className = 'md-reader__toc-row'
+
+  const toggle = document.createElement('button')
+  toggle.type = 'button'
+  toggle.className = 'md-reader__toc-toggle'
+  toggle.innerHTML = item.children.length ? '<span></span>' : ''
+  toggle.disabled = !item.children.length
+
+  const link = document.createElement('a')
+  link.title = item.text
+  link.href = `#${item.encoded}`
+  link.textContent = item.text
+  row.append(toggle, link)
+  item.li.appendChild(row)
+
+  if (!item.children.length) return
+
+  item.li.classList.add('expanded')
+  const childList = document.createElement('ul')
+  childList.className = 'md-reader__toc-children'
+  item.children.forEach((child) => {
+    renderTocItem(child)
+    childList.appendChild(child.li)
+  })
+  toggle.addEventListener('click', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    item.li.classList.toggle('expanded')
+  })
+  item.li.appendChild(childList)
+}
+
+function setSidebarWidth(value: number): void {
+  const width = Math.min(520, Math.max(220, Math.round(value)))
+  HTML.style.setProperty(SIDE_WIDTH_VAR, `${width}px`)
 }
 
 export default function initContentScript(): void {
@@ -114,6 +217,7 @@ async function init(): Promise<void> {
   if (!data.enable) return
 
   setTheme(data.pageTheme || 'light')
+  if (typeof data.sideWidth === 'number') setSidebarWidth(data.sideWidth)
   BODY.classList.toggle(CN.SIDE_COLLAPSED, !!data.hiddenSide)
 
   const rawPre = BODY.querySelector('pre')
@@ -139,7 +243,21 @@ async function init(): Promise<void> {
 
   // Sidebar
   const mdSide = createSidebar()
-  renderSidebar(mdSide, mdContent)
+  const sideResizeHandle = document.createElement('div')
+  sideResizeHandle.className = 'md-reader__side-resize-handle'
+  const sideSwitch = document.createElement('li')
+  sideSwitch.className = 'md-reader__side-switch'
+  const fileTree = document.createElement('li')
+  fileTree.className = 'md-reader__side-file-tree'
+  const tocTree = document.createElement('li')
+  tocTree.className = 'md-reader__side-toc'
+  const tocList = document.createElement('ul')
+  tocList.className = 'md-reader__toc-list'
+  tocTree.appendChild(tocList)
+  const fileTreeRootURL = getParentDirectoryURL(window.location.href)
+  let sideMode: 'files' | 'toc' = fileTreeRootURL ? 'files' : 'toc'
+  renderSideSwitch()
+  if (fileTreeRootURL) renderFileTree(fileTreeRootURL)
 
   // Buttons
   const btnWrap = document.createElement('div')
@@ -150,7 +268,10 @@ async function init(): Promise<void> {
   sideBtn.title = 'Toggle sidebar'
   sideBtn.innerHTML = ICONS.side
   sideBtn.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ action: 'storage', data: { key: 'hiddenSide', value: !data.hiddenSide } })
+    const value = window.innerWidth <= 960
+      ? !BODY.classList.contains(CN.SIDE_EXPANDED)
+      : !BODY.classList.contains(CN.SIDE_COLLAPSED)
+    chrome.runtime.sendMessage({ action: 'storage', data: { key: 'hiddenSide', value } })
   })
 
   const rawBtn = document.createElement('button')
@@ -174,14 +295,32 @@ async function init(): Promise<void> {
   topBtn.style.display = 'none'
   topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }))
 
+  const optionsBtn = document.createElement('button')
+  optionsBtn.className = `${CN.BTN} md-reader__btn--options`
+  optionsBtn.title = 'Options'
+  optionsBtn.innerHTML = '<span></span><span></span><span></span>'
+  optionsBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    optionsMenu.classList.toggle('opened')
+  })
+
+  const optionsMenu = document.createElement('div')
+  optionsMenu.className = 'md-reader__options-menu'
+  optionsMenu.addEventListener('click', (e) => e.stopPropagation())
+  renderOptionsMenu()
+  document.addEventListener('click', () => optionsMenu.classList.remove('opened'))
+
   btnWrap.appendChild(sideBtn)
   btnWrap.appendChild(rawBtn)
+  btnWrap.appendChild(optionsBtn)
+  btnWrap.appendChild(optionsMenu)
   btnWrap.appendChild(topBtn)
 
   // Mount
   BODY.appendChild(btnWrap)
   BODY.appendChild(mdBody)
   BODY.appendChild(mdSide)
+  initSideResize()
 
   // Scroll handler
   let sideHover = false
@@ -189,6 +328,7 @@ async function init(): Promise<void> {
   let sideLis: HTMLElement[] = []
   let targetIdx: number | null = null
   let reloading = false
+  renderSide()
 
   mdSide.addEventListener('mouseenter', () => { sideHover = true })
   mdSide.addEventListener('mouseleave', () => { sideHover = false })
@@ -196,8 +336,6 @@ async function init(): Promise<void> {
   document.addEventListener('scroll', throttle(() => {
     const scrollTop = document.documentElement.scrollTop
     topBtn.style.display = scrollTop >= 640 ? '' : 'none'
-    headEls = Array.from(mdContent.querySelectorAll(HEADERS))
-    sideLis = Array.from(mdSide.querySelectorAll('li'))
 
     for (let i = 0; i < headEls.length; i++) {
       let sectionTop = -20
@@ -223,6 +361,7 @@ async function init(): Promise<void> {
   darkMQL.addEventListener('change', (e) => {
     if (data.pageTheme === 'auto') {
       rerender(data, mdContent)
+      renderSide()
     }
   })
 
@@ -238,6 +377,7 @@ async function init(): Promise<void> {
           } else if (currentRaw !== res) {
             currentRaw = res
             mdContent.innerHTML = mdRender(res, { theme: toTheme(data.pageTheme || 'light'), plugins: data.mdPlugins })
+            renderSide()
             if (rawPre) rawPre.textContent = res
           }
         }
@@ -257,16 +397,21 @@ async function init(): Promise<void> {
 
     switch (action) {
       case 'reload': window.location.reload(); break
-      case 'updateMdPlugins': reloading = true; rerender(data, mdContent); renderSidebar(mdSide, mdContent); reloading = false; break
+      case 'updateMdPlugins': reloading = true; rerender(data, mdContent); renderSide(); reloading = false; break
       case 'updatePageTheme': {
         const prev = toTheme(data.pageTheme || 'light')
         setTheme(value as Theme)
         const next = toTheme(value as Theme)
-        if (data.mdPlugins?.includes('Mermaid') && prev !== next) rerender(data, mdContent)
+        if (data.mdPlugins?.includes('Mermaid') && prev !== next) {
+          rerender(data, mdContent)
+          renderSide()
+        }
+        updateOptionsMenuState()
         break
       }
+      case 'updateFileTreeOptions': if (fileTreeRootURL) renderFileTree(fileTreeRootURL); updateOptionsMenuState(); break
       case 'updateCodeTheme':
-      case 'updateFontSize': rerender(data, mdContent); break
+      case 'updateFontSize': rerender(data, mdContent); renderSide(); break
       case 'toggleRefresh': clearTimeout(pollTimer); if (value) window.location.reload(); break
       case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); break
       case 'toggleSide': {
@@ -300,4 +445,189 @@ async function init(): Promise<void> {
   meta.content = 'no-referrer'
   HEAD.appendChild(meta)
   BODY.classList.add('md-reader')
+
+  function renderSide(): void {
+    renderSidebar(mdSide, mdContent, {
+      sideSwitch,
+      fileTree,
+      tocTree,
+      tocList,
+      fileTreeRootURL,
+      updateSideMode,
+      sideMode,
+    })
+    mdSide.appendChild(sideResizeHandle)
+    headEls = Array.from(mdContent.querySelectorAll<HTMLElement>(HEADERS))
+    sideLis = Array.from(tocList.querySelectorAll<HTMLElement>('.md-reader__toc-item'))
+  }
+
+  function initSideResize(): void {
+    let startX = 0
+    let startWidth = 0
+
+    const onMove = (event: PointerEvent) => {
+      setSidebarWidth(startWidth + event.clientX - startX)
+    }
+    const onEnd = () => {
+      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onEnd)
+      BODY.classList.remove('md-reader--resizing-side')
+      const width = Math.round(mdSide.getBoundingClientRect().width)
+      chrome.runtime.sendMessage({
+        action: 'storage',
+        data: { key: SIDE_WIDTH_STORAGE_KEY, value: width },
+      })
+    }
+
+    sideResizeHandle.addEventListener('pointerdown', (event) => {
+      if (window.innerWidth <= 960) return
+      startX = event.clientX
+      startWidth = mdSide.getBoundingClientRect().width
+      BODY.classList.add('md-reader--resizing-side')
+      document.addEventListener('pointermove', onMove)
+      document.addEventListener('pointerup', onEnd, { once: true })
+      event.preventDefault()
+    })
+  }
+
+  function renderSideSwitch(): void {
+    sideSwitch.innerHTML = ''
+    const switcher = document.createElement('div')
+    switcher.className = 'md-reader__side-switch-control'
+    switcher.append(
+      createSideSwitchButton('files', 'Files'),
+      createSideSwitchButton('toc', 'TOC'),
+    )
+    sideSwitch.appendChild(switcher)
+  }
+
+  function createSideSwitchButton(mode: 'files' | 'toc', label: string): HTMLButtonElement {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.dataset.mode = mode
+    button.textContent = label
+    button.disabled = mode === 'files' && !fileTreeRootURL
+    button.addEventListener('click', () => updateSideMode(mode))
+    return button
+  }
+
+  function updateSideMode(mode: 'files' | 'toc'): void {
+    sideMode = mode === 'files' && !fileTreeRootURL ? 'toc' : mode
+    fileTree.classList.toggle('active', sideMode === 'files')
+    tocTree.classList.toggle('active', sideMode === 'toc')
+    sideSwitch.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      button.classList.toggle('active', button.dataset.mode === sideMode)
+    })
+  }
+
+  function renderFileTree(rootURL: string): void {
+    fileTree.innerHTML = ''
+    const title = document.createElement('div')
+    title.className = 'md-reader__file-tree-title'
+    title.textContent = getFileName(rootURL) || 'Files'
+
+    const list = document.createElement('ul')
+    list.className = 'md-reader__file-tree-list'
+    fileTree.append(title, list)
+    loadFileTreeDirectory(rootURL, list)
+  }
+
+  function loadFileTreeDirectory(directoryURL: string, list: HTMLElement): void {
+    list.textContent = 'Loading...'
+    chrome.runtime.sendMessage(
+      { action: 'directory', data: { url: directoryURL } },
+      (html: string) => {
+        if (!html || chrome.runtime.lastError) {
+          list.textContent = 'Unable to load files'
+          return
+        }
+
+        const entries = parseDirectoryListing(html, directoryURL).filter(
+          (entry) => !data.hideDotFiles || !isDotEntry(entry),
+        )
+        list.innerHTML = ''
+        if (!entries.length) {
+          list.textContent = 'No markdown files'
+          return
+        }
+
+        entries.forEach((entry) => list.appendChild(renderFileTreeEntry(entry)))
+      },
+    )
+  }
+
+  function renderFileTreeEntry(entry: FileTreeEntry): HTMLElement {
+    const item = document.createElement('li')
+    item.className = `md-reader__file-tree-item md-reader__file-tree-item--${entry.type}`
+
+    if (entry.type === 'directory') {
+      const button = document.createElement('button')
+      const childList = document.createElement('ul')
+      childList.className = 'md-reader__file-tree-list'
+      childList.hidden = true
+      button.type = 'button'
+      button.innerHTML = '<span class="md-reader__file-tree-caret">▸</span><span class="md-reader__file-tree-icon">□</span><span class="md-reader__file-tree-name"></span>'
+      button.querySelector('.md-reader__file-tree-name')!.textContent = entry.name
+      button.addEventListener('click', () => {
+        const expanded = item.classList.toggle('expanded')
+        childList.hidden = !expanded
+        if (expanded && !childList.dataset.loaded) {
+          childList.dataset.loaded = 'true'
+          loadFileTreeDirectory(entry.url, childList)
+        }
+      })
+      item.append(button, childList)
+      return item
+    }
+
+    const link = document.createElement('a')
+    link.href = entry.url
+    link.innerHTML = '<span class="md-reader__file-tree-spacer"></span><span class="md-reader__file-tree-icon">M</span><span class="md-reader__file-tree-name"></span>'
+    link.querySelector('.md-reader__file-tree-name')!.textContent = entry.name
+    if (entry.url === window.location.href) item.classList.add('active')
+    item.appendChild(link)
+    return item
+  }
+
+  function renderOptionsMenu(): void {
+    optionsMenu.innerHTML = `
+      <div class="md-reader__options-title">Options</div>
+      <label class="md-reader__options-row">
+        <span>
+          <strong>Hide dotfiles</strong>
+          <small>Hide files and folders starting with a dot.</small>
+        </span>
+        <input type="checkbox" data-option="hideDotFiles" />
+      </label>
+      <div class="md-reader__options-group">
+        <div class="md-reader__options-label">Theme</div>
+        <div class="md-reader__options-theme">
+          <button type="button" data-theme="light">Light</button>
+          <button type="button" data-theme="dark">Dark</button>
+          <button type="button" data-theme="auto">Auto</button>
+        </div>
+      </div>
+    `
+
+    const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')
+    hideDotFiles?.addEventListener('change', () => {
+      saveConfig('hideDotFiles', !!hideDotFiles.checked)
+    })
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((button) => {
+      button.addEventListener('click', () => saveConfig('pageTheme', button.dataset.theme as Theme))
+    })
+    updateOptionsMenuState()
+  }
+
+  function updateOptionsMenuState(): void {
+    const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')
+    if (hideDotFiles) hideDotFiles.checked = !!data.hideDotFiles
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.theme === data.pageTheme)
+    })
+  }
+
+  function saveConfig<K extends keyof StorageData>(key: K, value: StorageData[K]): void {
+    chrome.runtime.sendMessage({ action: 'storage', data: { key, value } })
+  }
 }

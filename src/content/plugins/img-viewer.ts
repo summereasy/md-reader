@@ -67,7 +67,7 @@ export function openImageViewer(el: HTMLImageElement): void {
   // Init modal
   if (!modalEl) {
     modalEl = document.createElement('div')
-    modalEl.className = 'mdr-modal'
+    modalEl.className = 'md-reader__modal'
     modalEl.style.display = 'none'
     modalEl.addEventListener('click', closeModal)
     document.body.appendChild(modalEl)
@@ -76,7 +76,7 @@ export function openImageViewer(el: HTMLImageElement): void {
   // Init cloned image
   if (!clonedImg) {
     clonedImg = document.createElement('img')
-    clonedImg.className = 'mdr-zoom-image'
+    clonedImg.className = 'md-reader__zoom-image'
     clonedImg.style.display = 'none'
     setPositionFn = (pos) => setElePosition(clonedImg!, pos)
     modalEl.appendChild(clonedImg)

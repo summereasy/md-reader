@@ -22,8 +22,8 @@ async function writeText(text: string): Promise<void> {
 export default function blockCopyPlugin(): void {
   const ctx = createPluginCtx()
   ctx.on('click', async (target: HTMLElement) => {
-    if (target.classList.contains('mdr-copy-btn') || target.closest('.mdr-copy-btn')) {
-      const btn = target.closest('.mdr-copy-btn') as HTMLElement
+    if (target.classList.contains('md-reader__btn--copy') || target.closest('.md-reader__btn--copy')) {
+      const btn = target.closest('.md-reader__btn--copy') as HTMLElement
       if (btn.classList.contains('copied')) return
 
       const codeEl = btn.parentElement?.querySelector('code.hljs') as HTMLElement

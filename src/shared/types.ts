@@ -42,6 +42,8 @@ export interface StorageData {
   pageTheme?: Theme
   codeTheme?: CodeTheme
   fontSize?: FontSize
+  hideDotFiles?: boolean
+  sideWidth?: number
 }
 
 export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
@@ -55,6 +57,8 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     pageTheme: 'light',
     codeTheme: 'auto',
     fontSize: 'Normal',
+    hideDotFiles: false,
+    sideWidth: 260,
     ...merge,
   }
 }

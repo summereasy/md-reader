@@ -29,7 +29,7 @@ import { MD_PLUGINS } from '@/shared/types'
 const copySvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`
 const successSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>`
 
-const copyBtnHtml = `<button class="mdr-copy-btn" title="Copy"><span class="mdr-copy-icon">${copySvg}</span><span class="mdr-copy-success">${successSvg}</span></button>`
+const copyBtnHtml = `<button class="md-reader__btn md-reader__btn--copy" title="Copy"><span class="md-reader__copy-icon">${copySvg}</span><span class="md-reader__copy-success">${successSvg}</span></button>`
 
 function getThemeMd(theme: Theme): 'dark' | 'default' {
   return theme === 'dark' ? 'dark' : 'default'

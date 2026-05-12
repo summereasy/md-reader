@@ -107,6 +107,7 @@ export function initContentScript(): void {
 async function init(): Promise<void> {
   const rawData = await storage.get()
   const data = getDefaultData(rawData)
+  console.log('[md-reader] init — data:', JSON.stringify({ enable: data.enable, theme: data.pageTheme, plugins: data.mdPlugins?.length }))
   if (!data.enable) return
 
   setTheme(data.pageTheme || 'light')
@@ -114,6 +115,7 @@ async function init(): Promise<void> {
 
   const rawPre = BODY.querySelector('pre')
   const mdRaw = rawPre?.textContent || ''
+  console.log('[md-reader] rawPre:', !!rawPre, 'mdRaw length:', mdRaw.length)
 
   // Content area
   const mdContent = document.createElement('article')

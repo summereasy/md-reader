@@ -31,6 +31,7 @@ const ROOT_THEME_DISABLED_ATTR = 'data-mdr-theme-disabled'
 const SIDE_WIDTH_VAR = '--mdr-side-width'
 const SIDE_WIDTH_STORAGE_KEY = 'sideWidth'
 const FILE_TREE_ROOT_STORAGE_KEY = 'fileTreeRootURL'
+const CURRENT_FILE_QUERY_KEY = 'mdReaderFile'
 const KATEX_STYLE_ID = 'md-reader-katex-style'
 const darkMQL = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -237,6 +238,17 @@ function getFileTreeRootURL(data: StorageData): string | null {
   return fallbackRoot
 }
 
+function getQueryFileURL(fileTreeRootURL: string | null): string | null {
+  if (!fileTreeRootURL) return null
+
+  const url = new URL(window.location.href)
+  const value = url.searchParams.get(CURRENT_FILE_QUERY_KEY)
+  if (!value) return null
+
+  const fileURL = normalizeFileURL(value)
+  return isFileInDirectory(fileURL, fileTreeRootURL) ? fileURL : null
+}
+
 export default function initContentScript(): void {
   init()
 }
@@ -259,8 +271,12 @@ async function init(): Promise<void> {
   if (typeof data.sideWidth === 'number') setSidebarWidth(data.sideWidth)
   BODY.classList.toggle(CN.SIDE_COLLAPSED, !!data.hiddenSide)
 
+  const fileTreeRootURL = getFileTreeRootURL(data)
+  const queryFileURL = getQueryFileURL(fileTreeRootURL)
   const rawPre = BODY.querySelector('pre')
   const mdRaw = rawPre?.textContent || ''
+  let currentFileURL = queryFileURL || normalizeFileURL(window.location.href)
+  let currentRaw = mdRaw
   console.log('[md-reader] rawPre:', !!rawPre, 'mdRaw length:', mdRaw.length)
 
   // Content area
@@ -293,7 +309,6 @@ async function init(): Promise<void> {
   const tocList = document.createElement('ul')
   tocList.className = 'md-reader__toc-list'
   tocTree.appendChild(tocList)
-  const fileTreeRootURL = getFileTreeRootURL(data)
   let sideMode: 'files' | 'toc' = fileTreeRootURL ? 'files' : 'toc'
   renderSideSwitch()
   if (fileTreeRootURL) renderFileTree(fileTreeRootURL)
@@ -399,24 +414,23 @@ async function init(): Promise<void> {
   // Dark mode media query
   darkMQL.addEventListener('change', (e) => {
     if (data.pageTheme === 'auto') {
-      rerender(data, mdContent)
-      renderSide()
+      renderMarkdown(currentRaw)
+      renderToc()
     }
   })
 
   // Auto refresh
   let pollTimer: number | undefined
   if (data.refresh) {
-    let currentRaw = mdRaw
     const poll = () => {
-      chrome.runtime.sendMessage({ action: 'fetch' }, (res: string) => {
+      chrome.runtime.sendMessage({ action: 'fetch', data: { url: currentFileURL } }, (res: string) => {
         if (res !== undefined) {
           if (currentRaw === undefined || currentRaw === null) {
             if (res) window.location.reload()
           } else if (currentRaw !== res) {
             currentRaw = res
-            mdContent.innerHTML = mdRender(res, { theme: toTheme(data.pageTheme || 'light'), plugins: data.mdPlugins })
-            renderSide()
+            renderMarkdown(res)
+            renderToc()
             if (rawPre) rawPre.textContent = res
           }
         }
@@ -436,21 +450,21 @@ async function init(): Promise<void> {
 
     switch (action) {
       case 'reload': window.location.reload(); break
-      case 'updateMdPlugins': reloading = true; rerender(data, mdContent); renderSide(); reloading = false; break
+      case 'updateMdPlugins': reloading = true; renderMarkdown(currentRaw); renderToc(); reloading = false; break
       case 'updatePageTheme': {
         const prev = toTheme(data.pageTheme || 'light')
         setTheme(value as Theme)
         const next = toTheme(value as Theme)
         if (data.mdPlugins?.includes('Mermaid') && prev !== next) {
-          rerender(data, mdContent)
-          renderSide()
+          renderMarkdown(currentRaw)
+          renderToc()
         }
         updateOptionsMenuState()
         break
       }
       case 'updateFileTreeOptions': if (fileTreeRootURL) renderFileTree(fileTreeRootURL); updateOptionsMenuState(); break
       case 'updateCodeTheme':
-      case 'updateFontSize': rerender(data, mdContent); renderSide(); break
+      case 'updateFontSize': renderMarkdown(currentRaw); renderToc(); break
       case 'toggleRefresh': clearTimeout(pollTimer); if (value) window.location.reload(); break
       case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); break
       case 'toggleSide': {
@@ -484,21 +498,34 @@ async function init(): Promise<void> {
   meta.content = 'no-referrer'
   HEAD.appendChild(meta)
   BODY.classList.add('md-reader')
+  if (queryFileURL) {
+    await openMarkdownFile(queryFileURL, { updateHistory: false })
+  }
   removeSplash()
 
-  function renderSide(): void {
-    renderSidebar(mdSide, mdContent, {
-      sideSwitch,
-      fileTree,
-      tocTree,
-      tocList,
-      fileTreeRootURL,
-      updateSideMode,
-      sideMode,
+  function renderMarkdown(raw: string): void {
+    mdContent.innerHTML = mdRender(raw, {
+      theme: toTheme(data.pageTheme || 'light'),
+      plugins: data.mdPlugins,
     })
+  }
+
+  function renderSide(): void {
+    renderToc()
+    mdSide.innerHTML = ''
+    mdSide.appendChild(sideSwitch)
+    if (fileTreeRootURL) mdSide.appendChild(fileTree)
+    mdSide.appendChild(tocTree)
     mdSide.appendChild(sideResizeHandle)
+    updateSideMode(sideMode)
+  }
+
+  function renderToc(): void {
+    tocList.innerHTML = ''
+    buildTocTree(mdContent).forEach((item) => tocList.appendChild(item.li))
     headEls = Array.from(mdContent.querySelectorAll<HTMLElement>(HEADERS))
     sideLis = Array.from(tocList.querySelectorAll<HTMLElement>('.md-reader__toc-item'))
+    targetIdx = null
   }
 
   function initSideResize(): void {
@@ -608,7 +635,7 @@ async function init(): Promise<void> {
       button.type = 'button'
       button.innerHTML = '<span class="md-reader__file-tree-caret">▸</span><span class="md-reader__file-tree-icon">□</span><span class="md-reader__file-tree-name"></span>'
       button.querySelector('.md-reader__file-tree-name')!.textContent = entry.name
-      const containsCurrentFile = isFileInDirectory(window.location.href, entry.url)
+      const containsCurrentFile = isFileInDirectory(currentFileURL, entry.url)
       if (containsCurrentFile) {
         item.classList.add('expanded')
         childList.hidden = false
@@ -631,15 +658,72 @@ async function init(): Promise<void> {
     link.href = entry.url
     link.innerHTML = '<span class="md-reader__file-tree-spacer"></span><span class="md-reader__file-tree-icon">M</span><span class="md-reader__file-tree-name"></span>'
     link.querySelector('.md-reader__file-tree-name')!.textContent = entry.name
-    if (normalizeFileURL(entry.url) === normalizeFileURL(window.location.href)) item.classList.add('active')
+    if (normalizeFileURL(entry.url) === currentFileURL) item.classList.add('active')
     link.addEventListener('click', async (event) => {
       if (!fileTreeRootURL) return
       event.preventDefault()
       await storage.set(FILE_TREE_ROOT_STORAGE_KEY, fileTreeRootURL)
-      window.location.href = entry.url
+      void openMarkdownFile(entry.url)
     })
     item.appendChild(link)
     return item
+  }
+
+  function updateFileTreeActive(url: string): void {
+    const targetURL = normalizeFileURL(url)
+    fileTree.querySelectorAll<HTMLElement>('.md-reader__file-tree-item.active').forEach((item) => {
+      item.classList.remove('active')
+    })
+    fileTree.querySelectorAll<HTMLAnchorElement>('.md-reader__file-tree-item--file > a').forEach((link) => {
+      if (normalizeFileURL(link.href) === targetURL) {
+        link.closest('.md-reader__file-tree-item')?.classList.add('active')
+      }
+    })
+  }
+
+  function readMarkdownFile(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ action: 'readFile', data: { url } }, (res: string) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message))
+          return
+        }
+        resolve(res)
+      })
+    })
+  }
+
+  function updateLocationForCurrentFile(url: string): void {
+    try {
+      history.pushState({ mdReaderFileURL: currentFileURL }, '', url)
+      return
+    } catch {
+      // file:// pages can reject cross-path pushState; keep the current document URL.
+    }
+
+    const currentURL = new URL(window.location.href)
+    currentURL.searchParams.set(CURRENT_FILE_QUERY_KEY, url)
+    try {
+      history.pushState({ mdReaderFileURL: currentFileURL }, '', currentURL.href)
+    } catch {
+      // URL updates are best-effort; content switching should still work.
+    }
+  }
+
+  async function openMarkdownFile(url: string, options: { updateHistory?: boolean } = {}): Promise<void> {
+    try {
+      const raw = await readMarkdownFile(url)
+      currentFileURL = normalizeFileURL(url)
+      currentRaw = raw
+      renderMarkdown(raw)
+      renderToc()
+      updateFileTreeActive(currentFileURL)
+      if (rawPre) rawPre.textContent = raw
+      if (options.updateHistory !== false) updateLocationForCurrentFile(url)
+      window.scrollTo({ top: 0 })
+    } catch (err) {
+      console.error('[md-reader] Failed to open markdown file:', err)
+    }
   }
 
   function renderOptionsMenu(): void {

@@ -24,6 +24,32 @@ export function getParentDirectoryURL(fileURL: string): string | null {
   }
 }
 
+export function normalizeFileURL(fileURL: string): string {
+  try {
+    const url = new URL(fileURL)
+    url.search = ''
+    url.hash = ''
+    return url.href
+  } catch {
+    return fileURL
+  }
+}
+
+export function isFileInDirectory(fileURL: string, directoryURL: string): boolean {
+  try {
+    const file = new URL(normalizeFileURL(fileURL))
+    const directory = new URL(normalizeFileURL(directoryURL))
+    if (file.protocol !== 'file:' || directory.protocol !== 'file:') return false
+
+    const directoryPath = directory.pathname.endsWith('/')
+      ? directory.pathname
+      : `${directory.pathname}/`
+    return file.pathname.startsWith(directoryPath)
+  } catch {
+    return false
+  }
+}
+
 export function getFileName(fileURL: string): string {
   try {
     const url = new URL(fileURL)

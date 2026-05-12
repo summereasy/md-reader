@@ -10,6 +10,8 @@ import imgViewerPlugin from './plugins/img-viewer'
 import {
   getFileName,
   getParentDirectoryURL,
+  isFileInDirectory,
+  normalizeFileURL,
   parseDirectoryListing,
   type FileTreeEntry,
 } from './file-tree'
@@ -28,6 +30,7 @@ const ROOT_THEME_ATTR = 'data-mdr-theme'
 const ROOT_THEME_DISABLED_ATTR = 'data-mdr-theme-disabled'
 const SIDE_WIDTH_VAR = '--mdr-side-width'
 const SIDE_WIDTH_STORAGE_KEY = 'sideWidth'
+const FILE_TREE_ROOT_STORAGE_KEY = 'fileTreeRootURL'
 const KATEX_STYLE_ID = 'md-reader-katex-style'
 const darkMQL = window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -214,6 +217,18 @@ function setSidebarWidth(value: number): void {
   HTML.style.setProperty(SIDE_WIDTH_VAR, `${width}px`)
 }
 
+function getFileTreeRootURL(data: StorageData): string | null {
+  const fallbackRoot = getParentDirectoryURL(window.location.href)
+  if (!fallbackRoot) return null
+
+  if (data.fileTreeRootURL && isFileInDirectory(window.location.href, data.fileTreeRootURL)) {
+    return data.fileTreeRootURL
+  }
+
+  void storage.set(FILE_TREE_ROOT_STORAGE_KEY, fallbackRoot)
+  return fallbackRoot
+}
+
 export default function initContentScript(): void {
   init()
 }
@@ -266,7 +281,7 @@ async function init(): Promise<void> {
   const tocList = document.createElement('ul')
   tocList.className = 'md-reader__toc-list'
   tocTree.appendChild(tocList)
-  const fileTreeRootURL = getParentDirectoryURL(window.location.href)
+  const fileTreeRootURL = getFileTreeRootURL(data)
   let sideMode: 'files' | 'toc' = fileTreeRootURL ? 'files' : 'toc'
   renderSideSwitch()
   if (fileTreeRootURL) renderFileTree(fileTreeRootURL)
@@ -580,6 +595,13 @@ async function init(): Promise<void> {
       button.type = 'button'
       button.innerHTML = '<span class="md-reader__file-tree-caret">▸</span><span class="md-reader__file-tree-icon">□</span><span class="md-reader__file-tree-name"></span>'
       button.querySelector('.md-reader__file-tree-name')!.textContent = entry.name
+      const containsCurrentFile = isFileInDirectory(window.location.href, entry.url)
+      if (containsCurrentFile) {
+        item.classList.add('expanded')
+        childList.hidden = false
+        childList.dataset.loaded = 'true'
+        loadFileTreeDirectory(entry.url, childList)
+      }
       button.addEventListener('click', () => {
         const expanded = item.classList.toggle('expanded')
         childList.hidden = !expanded
@@ -596,7 +618,13 @@ async function init(): Promise<void> {
     link.href = entry.url
     link.innerHTML = '<span class="md-reader__file-tree-spacer"></span><span class="md-reader__file-tree-icon">M</span><span class="md-reader__file-tree-name"></span>'
     link.querySelector('.md-reader__file-tree-name')!.textContent = entry.name
-    if (entry.url === window.location.href) item.classList.add('active')
+    if (normalizeFileURL(entry.url) === normalizeFileURL(window.location.href)) item.classList.add('active')
+    link.addEventListener('click', async (event) => {
+      if (!fileTreeRootURL) return
+      event.preventDefault()
+      await storage.set(FILE_TREE_ROOT_STORAGE_KEY, fileTreeRootURL)
+      window.location.href = entry.url
+    })
     item.appendChild(link)
     return item
   }

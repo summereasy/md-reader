@@ -44,6 +44,7 @@ export interface StorageData {
   fontSize?: FontSize
   hideDotFiles?: boolean
   sideWidth?: number
+  fileTreeRootURL?: string
 }
 
 export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
@@ -59,6 +60,7 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     fontSize: 'Normal',
     hideDotFiles: false,
     sideWidth: 260,
+    fileTreeRootURL: undefined,
     ...merge,
   }
 }

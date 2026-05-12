@@ -20,6 +20,9 @@ importers:
       highlight.js:
         specifier: ^11.6.0
         version: 11.11.1
+      katex:
+        specifier: 0.16.45
+        version: 0.16.45
       lodash.debounce:
         specifier: ^4.0.8
         version: 4.0.8

@@ -21,6 +21,7 @@ export default defineConfig({
         copyFileSync(resolve(srcDir, 'manifest.json'), resolve(distDir, 'manifest.json'))
         cpSync(resolve(srcDir, '_locales'), resolve(distDir, '_locales'), { recursive: true })
         cpSync(resolve(srcDir, 'assets'), assetsDist, { recursive: true })
+        cpSync(resolve(ROOT, 'node_modules/katex/dist/fonts'), resolve(assetsDist, 'katex/fonts'), { recursive: true })
       },
     },
   ],

@@ -48,6 +48,7 @@ body.md-reader {
   line-height: 1.6;
   margin: 0;
   padding: 0;
+  counter-reset: katexEqnNo mmlEqnNo;
 }
 
 body.md-reader > pre {
@@ -904,17 +905,10 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
 }
 
 .md-reader__markdown-content .katex-display {
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0.5em 0;
-}
-
-.md-reader__markdown-content .katex svg {
-  max-width: 100%;
-}
-
-.md-reader__markdown-content .katex .hide-tail {
-  overflow: hidden;
 }
 
 /* TOC override */

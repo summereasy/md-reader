@@ -13,6 +13,7 @@ import {
   parseDirectoryListing,
   type FileTreeEntry,
 } from './file-tree'
+import katexCss from 'katex/dist/katex.min.css?raw'
 import './style.css'
 
 const PREFIX = 'md-reader__'
@@ -27,6 +28,7 @@ const ROOT_THEME_ATTR = 'data-mdr-theme'
 const ROOT_THEME_DISABLED_ATTR = 'data-mdr-theme-disabled'
 const SIDE_WIDTH_VAR = '--mdr-side-width'
 const SIDE_WIDTH_STORAGE_KEY = 'sideWidth'
+const KATEX_STYLE_ID = 'md-reader-katex-style'
 const darkMQL = window.matchMedia('(prefers-color-scheme: dark)')
 
 interface TocItem {
@@ -64,6 +66,15 @@ const ICONS = {
 blockCopyPlugin()
 imgViewerPlugin()
 const eventBus = getEventBus()
+
+function injectKatexStyle(): void {
+  if (document.getElementById(KATEX_STYLE_ID)) return
+
+  const style = document.createElement('style')
+  style.id = KATEX_STYLE_ID
+  style.textContent = katexCss.replaceAll('url(fonts/', `url(${chrome.runtime.getURL('assets/katex/fonts/')}`)
+  HEAD.appendChild(style)
+}
 
 function toTheme(theme: Theme): Exclude<Theme, 'auto'> {
   return theme === 'auto' ? (darkMQL.matches ? 'dark' : 'light') : theme
@@ -216,6 +227,7 @@ async function init(): Promise<void> {
   console.log('[md-reader] init — data:', JSON.stringify({ enable: data.enable, theme: data.pageTheme, plugins: data.mdPlugins?.length }))
   if (!data.enable) return
 
+  injectKatexStyle()
   setTheme(data.pageTheme || 'light')
   if (typeof data.sideWidth === 'number') setSidebarWidth(data.sideWidth)
   BODY.classList.toggle(CN.SIDE_COLLAPSED, !!data.hiddenSide)

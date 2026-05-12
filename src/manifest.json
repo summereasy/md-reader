@@ -122,7 +122,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*"],
+      "resources": ["assets/*", "assets/katex/fonts/*"],
       "matches": ["<all_urls>"]
     }
   ]

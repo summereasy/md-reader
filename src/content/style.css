@@ -56,7 +56,8 @@ body.md-reader > pre {
 /* Main body */
 .mdr-body {
   max-width: 860px;
-  margin: 0 auto;
+  margin-left: 260px;
+  margin-right: auto;
   padding: 40px 20px 120px;
 }
 
@@ -69,13 +70,13 @@ body.md-reader > pre {
 .mdr-side {
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   width: 240px;
   height: 100vh;
   overflow-y: auto;
   padding: 60px 16px 40px;
   background: var(--mdr-side-bg);
-  border-left: 1px solid var(--mdr-border);
+  border-right: 1px solid var(--mdr-border);
   list-style: none;
   margin: 0;
   z-index: 100;
@@ -106,7 +107,7 @@ body.md-reader > pre {
 }
 
 .mdr-side-collapsed .mdr-side {
-  transform: translateX(240px);
+  transform: translateX(-240px);
 }
 
 /* Side expand (mobile) */
@@ -116,7 +117,7 @@ body.md-reader > pre {
 
 @media (max-width: 960px) {
   .mdr-side {
-    transform: translateX(240px);
+    transform: translateX(-240px);
   }
   .mdr-side-expanded .mdr-side {
     transform: translateX(0);
@@ -292,7 +293,7 @@ body.md-reader > pre {
 /* Button wrap */
 .mdr-btn-wrap {
   position: fixed;
-  right: 260px;
+  left: 260px;
   bottom: 32px;
   display: flex;
   flex-direction: column;
@@ -302,7 +303,7 @@ body.md-reader > pre {
 
 @media (max-width: 960px) {
   .mdr-btn-wrap {
-    right: 16px;
+    left: 16px;
   }
 }
 

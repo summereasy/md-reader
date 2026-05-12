@@ -1,0 +1,8 @@
+{
+  "ext_name": { "message": "Markdown Reader" },
+  "ext_desc": { "message": "ブラウザで Markdown をプレビューするための最適な方法です。" },
+  "command_toggle_side": { "message": "サイドバーの切り替え" },
+  "command_toggle_centered": { "message": "中央揃えの切り替え" },
+  "command_toggle_refresh": { "message": "自動更新の切り替え" },
+  "command_toggle_theme": { "message": "テーマの切り替え" }
+}

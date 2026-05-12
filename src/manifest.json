@@ -1,71 +1,97 @@
 {
   "name": "__MSG_ext_name__",
-  "version": "2.12.12",
-  "version_name": "2.12.12",
+  "version": "3.0.0",
+  "version_name": "3.0.0",
   "author": "Bener",
   "manifest_version": 3,
   "description": "__MSG_ext_desc__",
   "default_locale": "en",
+  "homepage_url": "https://github.com/summereasy/md-reader",
   "icons": {
-    "16": "images/logo-stroke.png",
-    "32": "images/logo-stroke.png",
-    "48": "images/logo-stroke.png",
-    "128": "images/logo-stroke.png",
-    "512": "images/logo-stroke.png"
+    "16": "assets/logo.png",
+    "24": "assets/logo.png",
+    "32": "assets/logo.png",
+    "48": "assets/logo.png",
+    "128": "assets/logo.png",
+    "512": "assets/logo.png"
   },
-  "web_accessible_resources": [
-    {
-      "resources": ["css/*", "fonts/*", "images/*"],
-      "matches": ["<all_urls>"]
-    }
-  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "background": {
-    "service_worker": "js/background.js"
+    "service_worker": "background/index.mjs"
   },
   "action": {
-    "default_title": "md-reader",
-    "default_popup": "popup.html"
+    "default_title": "__MSG_ext_name__",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/logo.png",
+      "24": "assets/logo.png",
+      "32": "assets/logo.png"
+    }
   },
-  "permissions": ["activeTab", "storage"],
-  "host_permissions": ["*://*/*"],
+  "options_ui": {
+    "open_in_tab": true,
+    "page": "options.html"
+  },
+  "permissions": ["storage", "tabs"],
   "content_scripts": [
     {
-      "js": ["js/content.js"],
-      "css": ["css/content.css"],
+      "js": ["content/index.global.js"],
+      "css": ["content/style.css"],
       "matches": [
         "*://*/*.md",
         "*://*/*.mdx",
+        "*://*/*.mdc",
         "*://*/*.mkd",
+        "*://*/*.txt",
         "*://*/*.markdown",
         "*://*/*.MD",
         "*://*/*.MDX",
+        "*://*/*.MDC",
         "*://*/*.MKD",
+        "*://*/*.TXT",
         "*://*/*.MARKDOWN",
         "file://*/*.md",
         "file://*/*.mdx",
+        "file://*/*.mdc",
         "file://*/*.mkd",
+        "file://*/*.txt",
         "file://*/*.markdown",
         "file://*/*.MD",
         "file://*/*.MDX",
+        "file://*/*.MDC",
         "file://*/*.MKD",
+        "file://*/*.TXT",
         "file://*/*.MARKDOWN",
         "*://*/*.md?*",
         "*://*/*.mdx?*",
+        "*://*/*.mdc?*",
         "*://*/*.mkd?*",
+        "*://*/*.txt?*",
         "*://*/*.markdown?*",
         "*://*/*.MD?*",
         "*://*/*.MDX?*",
+        "*://*/*.MDC?*",
         "*://*/*.MKD?*",
+        "*://*/*.TXT?*",
         "*://*/*.MARKDOWN?*",
         "file://*/*.md?*",
         "file://*/*.mdx?*",
+        "file://*/*.mdc?*",
         "file://*/*.mkd?*",
+        "file://*/*.txt?*",
         "file://*/*.markdown?*",
         "file://*/*.MD?*",
         "file://*/*.MDX?*",
+        "file://*/*.MDC?*",
         "file://*/*.MKD?*",
-        "file://*/*.MARKDOWN?*"
-      ]
+        "file://*/*.TXT?*",
+        "file://*/*.MARKDOWN?*",
+        "file://*/*/",
+        "file:///"
+      ],
+      "run_at": "document_start"
     }
   ],
   "commands": {
@@ -87,11 +113,17 @@
         "default": "Alt+Shift+R"
       }
     },
-    "toggleTheme": {
+    "togglePageTheme": {
       "description": "__MSG_command_toggle_theme__",
       "suggested_key": {
         "default": "Alt+Shift+T"
       }
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

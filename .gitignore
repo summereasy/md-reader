@@ -1,9 +1,4 @@
-dist
-extension
 node_modules
-extension.crx
-extension.pem
-*.zip
-.vscode/settings.json
-.idea
-.fleet
+dist
+.DS_Store
+*.local

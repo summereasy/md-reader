@@ -1,93 +1,84 @@
 # Markdown Reader
 
-<img alt="Markdown Reader Logo" src="https://raw.githubusercontent.com/md-reader/md-reader/main/src//images/logo-stroke.svg" align="right" width="120">
+<img alt="Markdown Reader Logo" src="https://raw.githubusercontent.com/md-reader/md-reader/main/src/images/logo-stroke.svg" align="right" width="120">
 
 English | [中文](./README-cn.md) | [한국어](./README-ko.md)
 
-https://md-reader.github.io
+A powerful browser extension for previewing Markdown files in your **Chrome** or **Brave** browser.
 
-[![](https://badgen.net/chrome-web-store/v/medapdbncneneejhbgcjceippjlfkmkg?icon=chrome&color=607cd2)](https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg) [![](https://badgen.net/chrome-web-store/stars/medapdbncneneejhbgcjceippjlfkmkg?icon=chrome&color=607cd2)](https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg) [![](https://badgen.net/chrome-web-store/users/medapdbncneneejhbgcjceippjlfkmkg?icon=chrome&color=607cd2)](https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg)
-
-Markdown Reader is a powerful browser extension that enables you to conveniently preview Markdown documents in your browser.
-
-> This repository contains the old source code of Markdown Reader(2.x version) and is no longer maintained.
-> It is used only to collect issues about Markdown Reader.
+> **This is an open-source Vue 3 rewrite of Markdown Reader (v3.x).**
+> Original Svelte 2.x source code is on the `main` branch.
 > 
-> Please download the 3.x version from the [website](https://md-reader.github.io).
+> Original author: **Bener** — [https://md-reader.github.io](https://md-reader.github.io)
 
-- **Document Formats**: Preview links in `file://`, `http://`, `https://` and files with `.md`, `.mkd`, `.mdx`, `.markdown` extensions:
-  - `https://example.com/example.md` (online Markdown URL)
-  - `file:///Users/my-project/readme.markdown` (local Markdown file, \*[requires specific permissions](#allowing-file-access-permission))
-- **Syntax Plugins**: Emoji, superscripts/subscripts, checkboxes, math, flowcharts, Gantt charts, TOC, insertions, abbreviations, annotations, alerts.
-- **Themes**: High quality light/dark themes and code highlighting.
-- **Hot Reloading**: Real-time document changes and centered display for better reading.
-- **Document Organization**: Sidebar directory, original content preview, and image media support.
-- **Shortcuts**: Quick function invocation with web extension shortcuts.
+---
 
-![banner](./example/example-1.png)
+## ✨ Features
 
-The default theme styles are stored in https://github.com/md-reader/theme. If you’d like to view or customize the theme styles, feel free to visit the link and adjust the CSS files as needed.
+- **Rich Document Support**: Preview `.md`, `.mdx`, `.mkd`, `.markdown`, `.txt` files via `http://`, `https://`, `file://`
+- **Syntax Plugins**: Emoji, Sup/Sub, Katex Math, Mermaid Diagrams, TOC, Task Lists, Alerts, and more
+- **Themes**: Light / Dark / Auto mode with code highlighting
+- **Sidebar Navigation**: Auto-generated table of contents with scroll tracking
+- **Image Viewer**: Click to zoom images in lightbox
+- **Code Block Copy**: One-click code block copy
+- **Auto Refresh**: Watch file changes and auto-reload
+- **Keyboard Shortcuts**: `Alt+Shift+B/C/R/T` for quick actions
+- **Vue 3 + TDesign**: Clean modern UI for popup and settings pages
 
-## Installation
+## 🚀 Quick Start
 
-### A. Install from web extension Store
+### Install from Source
 
-<a href="https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg" target="_blank"><img src="./src/images/Chrome.png" style="width:50px"/></a>
-<a href="https://microsoftedge.microsoft.com/addons/detail/markdown-reader/djnplooklihmkcioemdjfcednfkpiodc" target="_blank"><img src="./src/images/Edge.png" style="width:50px"/></a>
-<a href="https://addons.mozilla.org/firefox/addon/markdown-reader-ext/" target="_blank"><img src="./src/images/Firefox.png" style="width:50px"/></a>
-<a href="https://chromewebstore.google.com/detail/md-reader/medapdbncneneejhbgcjceippjlfkmkg" target="_blank"><img src="./src/images/Arc.png" style="width:50px"/></a>
+```bash
+# Clone this repository
+git clone https://github.com/summereasy/md-reader.git && cd md-reader
 
-### B. Building installation
+# Install dependencies (pnpm recommended)
+pnpm install
 
-Example of Chrome:
+# Build the extension
+pnpm build
+```
 
-1. Clone the `md-reader` repository and build it:
+Then load `dist/` as an unpacked extension in `chrome://extensions`.
 
-   ```bash
-   # Clone this repository
-   git clone https://github.com/md-reader/md-reader.git && cd md-reader
+### Load in Brave/Chrome
 
-   # Install dependencies
-   pnpm install
+1. Go to `chrome://extensions` (or `brave://extensions`)
+2. Enable **Developer mode** (top right)
+3. Click **Load unpacked** and select the `dist/` folder
+4. Enable **Allow access to file URLs** for local markdown preview
 
-   # Build the extension
-   pnpm build
-   ```
+## ⌨️ Shortcuts
 
-2. After a successful build, the `md-reader/dist` folder will contain the `md-reader-xxx.zip` extension package.
+| Shortcut | Action |
+|----------|--------|
+| `Alt+Shift+B` | Toggle sidebar |
+| `Alt+Shift+C` | Toggle centered layout |
+| `Alt+Shift+R` | Toggle auto refresh |
+| `Alt+Shift+T` | Toggle theme (light/dark) |
 
-3. Go to the Extensions management page in Chrome and drag the extension into the browser to install it.
+## 🛠 Tech Stack
 
-## Usage
+- **Framework**: Vue 3 + TypeScript
+- **UI Library**: TDesign Vue Next
+- **Build Tool**: Vite + UnoCSS
+- **Markdown Engine**: markdown-it + highlight.js + Katex + Mermaid
 
-Example of Chrome:
+## 📦 Dependencies
 
-After installation, Chrome is now able to preview online markdown documents. However, it is not able to preview local markdown documents by default and requires enabling file access permission for the Chrome extension.
+The markdown rendering pipeline uses:
+- [markdown-it](https://github.com/markdown-it/markdown-it) — core parser
+- [highlight.js](https://highlightjs.org/) — code syntax highlighting
+- [KaTeX](https://katex.org/) — math rendering
+- [Mermaid](https://mermaid.js.org/) — diagram rendering
+- Various markdown-it plugins for emoji, TOC, task lists, alerts, etc.
 
-### Allowing File Access Permission
+## 📄 License
 
-> Due to security reasons, Chrome by default disables extension access to local files. Therefore, after installing the plugin, you need to manually enable the permission in order to preview local markdown files.
+MIT © 2018-present [Bener](https://github.com/Heroor)
 
-In the Chrome Extensions management page, locate the installed "Markdown Reader" extension, click on "Details", and find the option "Allow access to file URLs" in the details page. Switch it to the enabled state (Please rest assured that "Markdown Reader" only performs read and display operations on markdown files and will not modify or upload user file data).
+The original 2.x version was created by Bener of the `md-reader` organization.  
+This Vue 3 rewrite preserves the MIT license and credits the original author.
 
-<br/>
-
-Now all the work is done~!ヾ(◍°∇°◍)ﾉ
-
-Try the effect by opening this online document: [Example Document](https://raw.githubusercontent.com/md-reader/md-reader/main/example/example.md); You can also try dragging a Markdown document directly into the browser!
-
-Feel free to ask any questions or provide suggestions.
-
-Giving a star to show your support is also an encouragement for me~!
-
-## Join the WeChat Community
-
-Scan the code to get the latest news and technical support:
-
-<img src="./src/images/mp-qrcode.jpg" alt="" style="width:220px"/>
-
-## License
-
-License [MIT](https://github.com/md-reader/md-reader/blob/main/LICENSE)
-
-© 2018-present, [Bener](https://github.com/Heroor)
+This is an independent open-source rewrite. For the official extension, visit [md-reader.github.io](https://md-reader.github.io).

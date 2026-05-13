@@ -22,6 +22,7 @@ async function fetchText(url: string): Promise<string> {
       const res = await fetch(url)
       return await res.text()
     } catch (err) {
+      console.warn(`[md-reader] fetch attempt ${i + 1}/3 failed (${url}):`, err)
       lastErr = err
     }
   }

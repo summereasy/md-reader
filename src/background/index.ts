@@ -73,9 +73,8 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       if (!url) return 'Error: URL is undefined.'
       try {
         return await fetchText(url)
-      } catch (err) {
-        console.error(err)
-        return (err as Error).message
+      } catch {
+        return undefined
       }
     }
     case 'readFile': {
@@ -83,9 +82,8 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       if (!url) return 'Error: URL is undefined.'
       try {
         return await fetchText(url)
-      } catch (err) {
-        console.error(err)
-        return (err as Error).message
+      } catch {
+        return undefined
       }
     }
     case 'directory': {
@@ -93,9 +91,8 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       if (!url) return 'Error: URL is undefined.'
       try {
         return await fetchText(url)
-      } catch (err) {
-        console.error(err)
-        return (err as Error).message
+      } catch {
+        return undefined
       }
     }
   }

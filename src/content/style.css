@@ -198,17 +198,17 @@
   --mdr-border: #dddbd4;
   --mdr-code-bg: #f0efe9;
   --mdr-pre-bg: #eceae2;
-  --mdr-side-bg: #f3f2ec;
-  --mdr-link: var(--mdr-primary);
+  --mdr-side-bg: #F5F4ED;
+  --mdr-link: var(--mdr-blue);
   --mdr-link-hover: #155499;
   --mdr-heading: #1F1E1D;
   --mdr-blockquote-text: #5a5855;
   --mdr-blockquote-border: #d0cec7;
-  --mdr-blockquote-bg: #f3f2ec;
+  --mdr-blockquote-bg: #F5F4ED;
   --mdr-table-border: #dddbd4;
   --mdr-table-head: #f0efe9;
-  --mdr-table-stripe: #f5f4ef;
-  --mdr-mark: color-mix(in srgb, var(--mdr-yellow) 30%, var(--mdr-bg));
+  --mdr-table-stripe: #F5F4ED;
+  --mdr-mark: color-mix(in srgb, var(--mdr-orange) 22%, var(--mdr-bg));
   --mdr-hr: #dddbd4;
   --mdr-btn-bg: #eceae2;
   --mdr-btn-hover: #e2e0d8;
@@ -217,7 +217,7 @@
   --mdr-mark-text: #1F1E1D;
   --mdr-on-accent: #fff;
   --mdr-soft-alpha: 10%;
-  --mdr-primary: var(--mdr-blue);
+  --mdr-primary: var(--mdr-orange);
   --mdr-important: var(--mdr-magenta);
   --mdr-success: var(--mdr-green);
   --mdr-warning: var(--mdr-yellow);
@@ -237,6 +237,10 @@
   --hljs-hue-5-2: #b02060;
   --hljs-hue-6: #B56613;
   --hljs-hue-6-2: #C96442;
+}
+
+[data-mdr-theme="claude"] ::selection {
+  background: rgba(193, 95, 60, 0.19);
 }
 
 

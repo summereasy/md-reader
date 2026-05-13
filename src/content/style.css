@@ -234,9 +234,9 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
 .md-reader__side-resize-handle {
   position: absolute;
   top: 0;
-  right: -4px;
+  right: -18px;
   bottom: 0;
-  width: 8px;
+  width: 24px;
   cursor: col-resize;
   z-index: 2;
 }
@@ -245,16 +245,18 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
   content: '';
   position: absolute;
   top: 0;
-  right: 3px;
+  left: 0;
   bottom: 0;
-  width: 1px;
+  width: 4px;
+  border-radius: 2px;
   background: transparent;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s;
 }
 
 .md-reader__side-resize-handle:hover::after,
 .md-reader--resizing-side .md-reader__side-resize-handle::after {
   background: var(--mdr-link);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--mdr-link) 50%, transparent);
 }
 
 .md-reader--resizing-side {

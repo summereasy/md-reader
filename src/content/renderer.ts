@@ -32,7 +32,7 @@ const successSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" 
 const copyBtnHtml = `<button class="md-reader__btn md-reader__btn--copy" title="Copy"><span class="md-reader__copy-icon">${copySvg}</span><span class="md-reader__copy-success">${successSvg}</span></button>`
 
 function getThemeMd(theme: Theme): 'dark' | 'default' {
-  return theme === 'dark' ? 'dark' : 'default'
+  return theme === 'dark' || theme === 'nordic' ? 'dark' : 'default'
 }
 
 type PluginFactory = (opts: { theme: Theme }) => [unknown, ...unknown[]]

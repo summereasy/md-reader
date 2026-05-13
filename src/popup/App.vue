@@ -25,6 +25,7 @@ const languages = [
 const themes: { value: Theme; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
+  { value: 'nordic', label: 'Nordic' },
   { value: 'auto', label: 'Auto' },
 ]
 

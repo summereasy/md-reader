@@ -17,7 +17,7 @@ export const MD_PLUGINS = [
 
 export type MdPlugin = (typeof MD_PLUGINS)[number]
 
-export type Theme = 'light' | 'dark' | 'auto'
+export type Theme = 'light' | 'dark' | 'nordic' | 'auto'
 
 export type CodeTheme = 'auto' | 'light' | 'dark'
 

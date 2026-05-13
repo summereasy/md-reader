@@ -37,6 +37,7 @@ const FILE_TREE_ROOT_STORAGE_KEY = 'fileTreeRootURL'
 const CURRENT_FILE_QUERY_KEY = 'mdReaderFile'
 const KATEX_STYLE_ID = 'md-reader-katex-style'
 const darkMQL = window.matchMedia('(prefers-color-scheme: dark)')
+type ResolvedTheme = Exclude<Theme, 'auto'>
 
 interface TocItem {
   head: HTMLElement
@@ -76,7 +77,7 @@ imgViewerPlugin()
 const eventBus = getEventBus()
 
 function updateSplashTheme(theme: Theme): void {
-  window.__mdReaderSplash?.setTheme(toTheme(theme))
+  window.__mdReaderSplash?.setTheme(toSplashTheme(toTheme(theme)))
 }
 
 function removeSplash(): void {
@@ -92,8 +93,12 @@ function injectKatexStyle(): void {
   HEAD.appendChild(style)
 }
 
-function toTheme(theme: Theme): Exclude<Theme, 'auto'> {
+function toTheme(theme: Theme): ResolvedTheme {
   return theme === 'auto' ? (darkMQL.matches ? 'dark' : 'light') : theme
+}
+
+function toSplashTheme(theme: ResolvedTheme): 'light' | 'dark' {
+  return theme === 'light' ? 'light' : 'dark'
 }
 
 function setTheme(theme: Theme): void {
@@ -775,6 +780,7 @@ async function init(): Promise<void> {
         <div class="md-reader__options-theme">
           <button type="button" data-theme="light">Light</button>
           <button type="button" data-theme="dark">Dark</button>
+          <button type="button" data-theme="nordic">Nordic</button>
           <button type="button" data-theme="auto">Auto</button>
         </div>
       </div>

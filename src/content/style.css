@@ -1056,7 +1056,7 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
 }
 
 .md-reader__btn:hover {
-  background: transparent;
+  background: rgba(127, 127, 127, 0.1);
   color: rgba(88, 96, 105, 0.75);
 }
 
@@ -1120,7 +1120,7 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
 }
 
 .md-reader__btn--side-expand:hover {
-  background: transparent !important;
+  background: rgba(127, 127, 127, 0.1) !important;
 }
 
 body.md-reader.side-collapsed .md-reader__btn--side-expand {

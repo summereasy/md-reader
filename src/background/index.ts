@@ -73,7 +73,8 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       if (!url) return 'Error: URL is undefined.'
       try {
         return await fetchText(url)
-      } catch {
+      } catch (err) {
+        console.error(`[md-reader] fetch failed after retries (${url}):`, err)
         return undefined
       }
     }
@@ -82,7 +83,8 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       if (!url) return 'Error: URL is undefined.'
       try {
         return await fetchText(url)
-      } catch {
+      } catch (err) {
+        console.error(`[md-reader] readFile failed after retries (${url}):`, err)
         return undefined
       }
     }
@@ -91,7 +93,8 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       if (!url) return 'Error: URL is undefined.'
       try {
         return await fetchText(url)
-      } catch {
+      } catch (err) {
+        console.error(`[md-reader] directory failed after retries (${url}):`, err)
         return undefined
       }
     }

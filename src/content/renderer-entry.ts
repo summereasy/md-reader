@@ -2,8 +2,8 @@
 import throttle from 'lodash.throttle'
 import { storage } from '@/shared/storage'
 import { mdRender } from './renderer'
-import { FONT_SIZE_MAP, getDefaultData } from '@/shared/types'
-import type { FontSize, StorageData, Theme } from '@/shared/types'
+import { FONT_SIZE_MAP, LIGHT_THEMES, DARK_THEMES, getDefaultData } from '@/shared/types'
+import type { FontSize, StorageData, ColorMode, LightTheme, DarkTheme } from '@/shared/types'
 import { getEventBus } from './plugins/event'
 import blockCopyPlugin from './plugins/block-copy'
 import imgViewerPlugin from './plugins/img-viewer'
@@ -37,7 +37,7 @@ const FILE_TREE_ROOT_STORAGE_KEY = 'fileTreeRootURL'
 const CURRENT_FILE_QUERY_KEY = 'mdReaderFile'
 const KATEX_STYLE_ID = 'md-reader-katex-style'
 const darkMQL = window.matchMedia('(prefers-color-scheme: dark)')
-type ResolvedTheme = Exclude<Theme, 'auto'>
+type ResolvedTheme = 'light' | 'dark' | 'nordic' | 'claude'
 
 interface TocItem {
   head: HTMLElement
@@ -76,8 +76,8 @@ blockCopyPlugin()
 imgViewerPlugin()
 const eventBus = getEventBus()
 
-function updateSplashTheme(theme: Theme): void {
-  window.__mdReaderSplash?.setTheme(toSplashTheme(toTheme(theme)))
+function updateSplashTheme(data: StorageData): void {
+  window.__mdReaderSplash?.setTheme(toSplashTheme(resolveTheme(data)))
 }
 
 function removeSplash(): void {
@@ -93,23 +93,30 @@ function injectKatexStyle(): void {
   HEAD.appendChild(style)
 }
 
-function toTheme(theme: Theme): ResolvedTheme {
-  return theme === 'auto' ? (darkMQL.matches ? 'dark' : 'light') : theme
+function resolveTheme(data: StorageData): ResolvedTheme {
+  const mode = data.colorMode ?? 'light'
+  const isDark = mode === 'auto' ? darkMQL.matches : mode === 'dark'
+  if (isDark) {
+    const t = data.darkTheme ?? 'default'
+    return t === 'default' ? 'dark' : t
+  }
+  const t = data.lightTheme ?? 'default'
+  return t === 'default' ? 'light' : t
 }
 
 function toSplashTheme(theme: ResolvedTheme): 'light' | 'dark' {
   return theme === 'light' ? 'light' : 'dark'
 }
 
-function setTheme(theme: Theme): void {
-  HTML.setAttribute(ROOT_THEME_ATTR, toTheme(theme))
+function setTheme(data: StorageData): void {
+  HTML.setAttribute(ROOT_THEME_ATTR, resolveTheme(data))
 }
 
 function rerender(data: StorageData, mdContent: HTMLElement): void {
   const rawPre = document.body.querySelector('pre')
   const mdRaw = rawPre?.textContent || ''
   mdContent.innerHTML = mdRender(mdRaw, {
-    theme: toTheme(data.pageTheme || 'light'),
+    theme: resolveTheme(data),
     plugins: data.mdPlugins,
   })
 }
@@ -275,15 +282,15 @@ export default function initContentScript(): void {
 async function init(): Promise<void> {
   const rawData = await storage.get()
   const data = getDefaultData(rawData)
-  console.log('[md-reader] init — data:', JSON.stringify({ enable: data.enable, theme: data.pageTheme, plugins: data.mdPlugins?.length }))
-  updateSplashTheme(data.pageTheme || 'light')
+  console.log('[md-reader] init — data:', JSON.stringify({ enable: data.enable, colorMode: data.colorMode, plugins: data.mdPlugins?.length }))
+  updateSplashTheme(data)
   if (!data.enable) {
     removeSplash()
     return
   }
 
   injectKatexStyle()
-  setTheme(data.pageTheme || 'light')
+  setTheme(data)
   setContentFontSize(data.fontSize)
   if (
     typeof data.sideWidth === 'number' &&
@@ -307,7 +314,7 @@ async function init(): Promise<void> {
   const mdContent = document.createElement('article')
   mdContent.className = `${CN.CONTENT} ${data.centered ? CN.CENTERED : ''}`
   mdContent.innerHTML = mdRender(mdRaw, {
-    theme: toTheme(data.pageTheme || 'light'),
+    theme: resolveTheme(data),
     plugins: data.mdPlugins,
   })
 
@@ -440,9 +447,9 @@ async function init(): Promise<void> {
 
   // Dark mode media query
   darkMQL.addEventListener('change', (e) => {
-    if (data.pageTheme === 'auto') {
-      setTheme('auto')
-      updateSplashTheme('auto')
+    if (data.colorMode === 'auto') {
+      setTheme(data)
+      updateSplashTheme(data)
       renderMarkdown(currentRaw)
       renderToc()
       updateOptionsMenuState()
@@ -482,10 +489,13 @@ async function init(): Promise<void> {
     switch (action) {
       case 'reload': window.location.reload(); break
       case 'updateMdPlugins': reloading = true; renderMarkdown(currentRaw); renderToc(); reloading = false; break
-      case 'updatePageTheme': {
+      case 'updatePageTheme':
+      case 'updateColorMode':
+      case 'updateLightTheme':
+      case 'updateDarkTheme': {
         const prev = HTML.getAttribute(ROOT_THEME_ATTR)
-        setTheme(value as Theme)
-        const next = toTheme(value as Theme)
+        setTheme(data)
+        const next = resolveTheme(data)
         if (data.mdPlugins?.includes('Mermaid') && prev !== next) {
           renderMarkdown(currentRaw)
           renderToc()
@@ -539,7 +549,7 @@ async function init(): Promise<void> {
 
   function renderMarkdown(raw: string): void {
     mdContent.innerHTML = mdRender(raw, {
-      theme: toTheme(data.pageTheme || 'light'),
+      theme: resolveTheme(data),
       plugins: data.mdPlugins,
     })
   }
@@ -776,12 +786,25 @@ async function init(): Promise<void> {
         <input type="checkbox" data-option="hideDotFiles" />
       </label>
       <div class="md-reader__options-group">
-        <div class="md-reader__options-label">Theme</div>
+        <div class="md-reader__options-label">Appearance</div>
         <div class="md-reader__options-theme">
-          <button type="button" data-theme="light">Light</button>
-          <button type="button" data-theme="dark">Dark</button>
-          <button type="button" data-theme="nordic">Nordic</button>
-          <button type="button" data-theme="auto">Auto</button>
+          <button type="button" data-color-mode="light">Light</button>
+          <button type="button" data-color-mode="dark">Dark</button>
+          <button type="button" data-color-mode="auto">Auto</button>
+        </div>
+        <div class="md-reader__options-theme-variants">
+          <div class="md-reader__options-variant-row">
+            <span>Light theme</span>
+            <select data-theme-variant="light">
+              ${LIGHT_THEMES.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+            </select>
+          </div>
+          <div class="md-reader__options-variant-row">
+            <span>Dark theme</span>
+            <select data-theme-variant="dark">
+              ${DARK_THEMES.map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+            </select>
+          </div>
         </div>
       </div>
       <div class="md-reader__options-group">
@@ -804,8 +827,14 @@ async function init(): Promise<void> {
     hideDotFiles?.addEventListener('change', () => {
       saveConfig('hideDotFiles', !!hideDotFiles.checked)
     })
-    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((button) => {
-      button.addEventListener('click', () => saveConfig('pageTheme', button.dataset.theme as Theme))
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-color-mode]').forEach((button) => {
+      button.addEventListener('click', () => saveConfig('colorMode', button.dataset.colorMode as ColorMode))
+    })
+    optionsMenu.querySelectorAll<HTMLSelectElement>('[data-theme-variant]').forEach((select) => {
+      select.addEventListener('change', () => {
+        if (select.dataset.themeVariant === 'light') saveConfig('lightTheme', select.value as LightTheme)
+        else saveConfig('darkTheme', select.value as DarkTheme)
+      })
     })
     const fontSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="fontSize"]')
     fontSlider?.addEventListener('input', () => {
@@ -823,9 +852,13 @@ async function init(): Promise<void> {
   function updateOptionsMenuState(): void {
     const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')
     if (hideDotFiles) hideDotFiles.checked = !!data.hideDotFiles
-    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-theme]').forEach((button) => {
-      button.classList.toggle('active', button.dataset.theme === data.pageTheme)
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-color-mode]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.colorMode === (data.colorMode ?? 'light'))
     })
+    const lightSelect = optionsMenu.querySelector<HTMLSelectElement>('[data-theme-variant="light"]')
+    if (lightSelect) lightSelect.value = data.lightTheme ?? 'default'
+    const darkSelect = optionsMenu.querySelector<HTMLSelectElement>('[data-theme-variant="dark"]')
+    if (darkSelect) darkSelect.value = data.darkTheme ?? 'default'
     const fontSizes = Object.keys(FONT_SIZE_MAP) as FontSize[]
     const fontSize = data.fontSize || 'Small'
     const fontSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="fontSize"]')

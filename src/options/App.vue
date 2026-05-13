@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { storage } from '@/shared/storage'
-import { getDefaultData, MD_PLUGINS, FONT_SIZE_MAP } from '@/shared/types'
-import type { StorageData, MdPlugin, Theme, FontSize } from '@/shared/types'
+import { getDefaultData, MD_PLUGINS, FONT_SIZE_MAP, LIGHT_THEMES, DARK_THEMES } from '@/shared/types'
+import type { StorageData, MdPlugin, ColorMode, LightTheme, DarkTheme, FontSize } from '@/shared/types'
 import {
   Card as TCard,
   Switch as TSwitch,
@@ -27,12 +27,14 @@ const languages = [
   { value: 'uk', label: 'Українська' },
 ]
 
-const themes: { value: Theme; label: string }[] = [
+const colorModes: { value: ColorMode; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
-  { value: 'nordic', label: 'Nordic' },
   { value: 'auto', label: 'Auto (follow system)' },
 ]
+
+const lightThemes = LIGHT_THEMES
+const darkThemes = DARK_THEMES
 
 const fontSizes: { value: FontSize; label: string }[] = Object.entries(FONT_SIZE_MAP).map(
   ([label]) => ({ value: label as FontSize, label }),
@@ -67,7 +69,9 @@ function togglePlugin(plugin: MdPlugin): void {
   updateStorage('mdPlugins', data.value.mdPlugins)
 }
 
-watch(() => data.value.pageTheme, (v) => updateStorage('pageTheme', v))
+watch(() => data.value.colorMode, (v) => updateStorage('colorMode', v))
+watch(() => data.value.lightTheme, (v) => updateStorage('lightTheme', v))
+watch(() => data.value.darkTheme, (v) => updateStorage('darkTheme', v))
 watch(() => data.value.codeTheme, (v) => updateStorage('codeTheme', v))
 watch(() => data.value.fontSize, (v) => updateStorage('fontSize', v))
 watch(() => data.value.language, (v) => { if (v) updateStorage('language', v) })
@@ -121,10 +125,24 @@ watch(() => data.value.language, (v) => { if (v) updateStorage('language', v) })
     <TCard title="Appearance" class="mb-4">
       <TSpace direction="vertical" size="medium" class="w-full">
         <div>
-          <div class="font-medium mb-1">Page Theme</div>
-          <TRadioGroup v-model="data.pageTheme" :disabled="!data.enable">
-            <TRadio v-for="t in themes" :key="t.value" :value="t.value">{{ t.label }}</TRadio>
+          <div class="font-medium mb-1">Appearance</div>
+          <TRadioGroup v-model="data.colorMode" :disabled="!data.enable">
+            <TRadio v-for="m in colorModes" :key="m.value" :value="m.value">{{ m.label }}</TRadio>
           </TRadioGroup>
+        </div>
+        <div class="flex gap-4">
+          <div>
+            <div class="text-sm text-gray-500 mb-1">Light theme</div>
+            <TSelect v-model="data.lightTheme" :disabled="!data.enable" style="width: 160px">
+              <TOption v-for="t in lightThemes" :key="t.value" :value="t.value" :label="t.label" />
+            </TSelect>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500 mb-1">Dark theme</div>
+            <TSelect v-model="data.darkTheme" :disabled="!data.enable" style="width: 160px">
+              <TOption v-for="t in darkThemes" :key="t.value" :value="t.value" :label="t.label" />
+            </TSelect>
+          </div>
         </div>
 
         <div>

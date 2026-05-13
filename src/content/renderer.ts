@@ -22,7 +22,7 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 }
-import type { MdPlugin, Theme } from '@/shared/types'
+import type { MdPlugin } from '@/shared/types'
 import { MD_PLUGINS } from '@/shared/types'
 
 // Copy button SVG icons
@@ -31,11 +31,13 @@ const successSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" 
 
 const copyBtnHtml = `<button class="md-reader__btn md-reader__btn--copy" title="Copy"><span class="md-reader__copy-icon">${copySvg}</span><span class="md-reader__copy-success">${successSvg}</span></button>`
 
-function getThemeMd(theme: Theme): 'dark' | 'default' {
+type ResolvedTheme = 'light' | 'dark' | 'nordic' | 'claude'
+
+function getThemeMd(theme: ResolvedTheme): 'dark' | 'default' {
   return theme === 'dark' || theme === 'nordic' ? 'dark' : 'default'
 }
 
-type PluginFactory = (opts: { theme: Theme }) => [unknown, ...unknown[]]
+type PluginFactory = (opts: { theme: ResolvedTheme }) => [unknown, ...unknown[]]
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PLUGINS: Record<string, any[] | PluginFactory> = {
@@ -60,7 +62,7 @@ const PLUGINS: Record<string, any[] | PluginFactory> = {
 export interface RenderOptions {
   config?: MdOptions
   plugins?: MdPlugin[]
-  theme?: Theme
+  theme?: ResolvedTheme
 }
 
 let mdInstance: MarkdownIt | null = null

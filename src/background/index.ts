@@ -40,7 +40,9 @@ const actionMap: Record<string, string> = {
   refresh: 'toggleRefresh',
   centered: 'toggleCentered',
   mdPlugins: 'updateMdPlugins',
-  pageTheme: 'updatePageTheme',
+  colorMode: 'updateColorMode',
+  lightTheme: 'updateLightTheme',
+  darkTheme: 'updateDarkTheme',
   codeTheme: 'updateCodeTheme',
   fontSize: 'updateFontSize',
   hiddenSide: 'toggleSide',
@@ -131,11 +133,11 @@ chrome.commands.onCommand.addListener(async (command) => {
       updatePage('refresh', value)
     },
     togglePageTheme: async () => {
-      const data = await storageGet('pageTheme')
-      const current = (data.pageTheme as string) || 'light'
+      const data = await storageGet('colorMode')
+      const current = (data.colorMode as string) || 'light'
       const value = current === 'light' ? 'dark' : 'light'
-      await storageSet({ pageTheme: value })
-      updatePage('pageTheme', value)
+      await storageSet({ colorMode: value })
+      updatePage('colorMode', value)
     },
   }
   const handler = handlers[command]

@@ -17,7 +17,19 @@ export const MD_PLUGINS = [
 
 export type MdPlugin = (typeof MD_PLUGINS)[number]
 
-export type Theme = 'light' | 'dark' | 'nordic' | 'auto'
+export type ColorMode = 'light' | 'dark' | 'auto'
+export type LightTheme = 'default' | 'claude'
+export type DarkTheme = 'default' | 'nordic'
+
+export const LIGHT_THEMES: { value: LightTheme; label: string }[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'claude', label: 'Claude' },
+]
+
+export const DARK_THEMES: { value: DarkTheme; label: string }[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'nordic', label: 'Nordic' },
+]
 
 export type CodeTheme = 'auto' | 'light' | 'dark'
 
@@ -39,7 +51,9 @@ export interface StorageData {
   hiddenSide?: boolean
   language?: string
   mdPlugins?: MdPlugin[]
-  pageTheme?: Theme
+  colorMode?: ColorMode
+  lightTheme?: LightTheme
+  darkTheme?: DarkTheme
   codeTheme?: CodeTheme
   fontSize?: FontSize
   hideDotFiles?: boolean
@@ -55,7 +69,9 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     hiddenSide: false,
     language: 'en',
     mdPlugins: [...MD_PLUGINS],
-    pageTheme: 'light',
+    colorMode: 'light',
+    lightTheme: 'default',
+    darkTheme: 'default',
     codeTheme: 'auto',
     fontSize: 'Small',
     hideDotFiles: false,

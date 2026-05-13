@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { storage } from '@/shared/storage'
-import { getDefaultData, MD_PLUGINS } from '@/shared/types'
-import type { StorageData, MdPlugin, Theme } from '@/shared/types'
+import { getDefaultData, MD_PLUGINS, LIGHT_THEMES, DARK_THEMES } from '@/shared/types'
+import type { StorageData, MdPlugin, ColorMode, LightTheme, DarkTheme } from '@/shared/types'
 import {
   Switch as TSwitch,
   Select as TSelect,
@@ -22,12 +22,14 @@ const languages = [
   { value: 'uk', label: 'Українська' },
 ]
 
-const themes: { value: Theme; label: string }[] = [
+const colorModes: { value: ColorMode; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
-  { value: 'nordic', label: 'Nordic' },
   { value: 'auto', label: 'Auto' },
 ]
+
+const lightThemes = LIGHT_THEMES
+const darkThemes = DARK_THEMES
 
 onMounted(async () => {
   try {
@@ -69,8 +71,16 @@ function togglePlugin(plugin: MdPlugin): void {
 }
 
 watch(
-  () => data.value.pageTheme,
-  (v) => updateStorage('pageTheme', v),
+  () => data.value.colorMode,
+  (v) => updateStorage('colorMode', v),
+)
+watch(
+  () => data.value.lightTheme,
+  (v) => updateStorage('lightTheme', v),
+)
+watch(
+  () => data.value.darkTheme,
+  (v) => updateStorage('darkTheme', v),
 )
 watch(
   () => data.value.language,
@@ -158,19 +168,33 @@ watch(
 
     <section class="popup__section">
       <div class="popup__section-head">
-        <span>Theme</span>
+        <span>Appearance</span>
       </div>
       <div class="popup__theme-group" :aria-disabled="!data.enable">
         <button
-          v-for="t in themes"
-          :key="t.value"
+          v-for="m in colorModes"
+          :key="m.value"
           type="button"
-          :class="['popup__theme', data.pageTheme === t.value && 'popup__theme--active']"
+          :class="['popup__theme', data.colorMode === m.value && 'popup__theme--active']"
           :disabled="!data.enable"
-          @click="data.pageTheme = t.value"
+          @click="data.colorMode = m.value"
         >
-          {{ t.label }}
+          {{ m.label }}
         </button>
+      </div>
+      <div class="popup__theme-variants" :aria-disabled="!data.enable">
+        <label class="popup__theme-variant-row">
+          <span>Light theme</span>
+          <select v-model="data.lightTheme" :disabled="!data.enable" class="popup__theme-variant-select">
+            <option v-for="t in lightThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
+          </select>
+        </label>
+        <label class="popup__theme-variant-row">
+          <span>Dark theme</span>
+          <select v-model="data.darkTheme" :disabled="!data.enable" class="popup__theme-variant-select">
+            <option v-for="t in darkThemes" :key="t.value" :value="t.value">{{ t.label }}</option>
+          </select>
+        </label>
       </div>
     </section>
 
@@ -371,6 +395,49 @@ watch(
 }
 
 .popup__chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.popup__theme-variants {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.popup__theme-variants[aria-disabled='true'] {
+  opacity: 0.48;
+}
+
+.popup__theme-variant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(36, 49, 88, 0.7);
+}
+
+.popup__theme-variant-select {
+  appearance: none;
+  width: 110px;
+  height: 26px;
+  padding: 0 22px 0 8px;
+  border: 1px solid rgba(36, 49, 88, 0.18);
+  border-radius: 8px;
+  background: rgba(36, 49, 88, 0.045);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24'%3E%3Cpath fill='%23607cd2' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  color: rgba(36, 49, 88, 0.9);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup__theme-variant-select:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }

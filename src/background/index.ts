@@ -14,6 +14,20 @@ async function storageGet(keys?: string | string[] | null): Promise<Record<strin
   })
 }
 
+async function fetchText(url: string): Promise<string> {
+  let lastErr: unknown
+  for (let i = 0; i < 3; i++) {
+    if (i > 0) await new Promise<void>((r) => setTimeout(r, 300))
+    try {
+      const res = await fetch(url)
+      return await res.text()
+    } catch (err) {
+      lastErr = err
+    }
+  }
+  throw lastErr
+}
+
 // Message routing
 interface MessagePayload {
   action: string
@@ -58,8 +72,7 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       const url = data?.url || tabs.find((t) => t.active)?.url
       if (!url) return 'Error: URL is undefined.'
       try {
-        const res = await fetch(url)
-        return res.text()
+        return await fetchText(url)
       } catch (err) {
         console.error(err)
         return (err as Error).message
@@ -69,8 +82,7 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       const url = data?.url
       if (!url) return 'Error: URL is undefined.'
       try {
-        const res = await fetch(url)
-        return res.text()
+        return await fetchText(url)
       } catch (err) {
         console.error(err)
         return (err as Error).message
@@ -80,8 +92,7 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
       const url = data?.url
       if (!url) return 'Error: URL is undefined.'
       try {
-        const res = await fetch(url)
-        return res.text()
+        return await fetchText(url)
       } catch (err) {
         console.error(err)
         return (err as Error).message

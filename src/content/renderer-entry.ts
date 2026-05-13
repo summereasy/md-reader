@@ -452,27 +452,23 @@ async function init(): Promise<void> {
   // Auto refresh
   let pollTimer: number | undefined
   if (data.refresh) {
-    const poll = async () => {
-      try {
-        const res = await fetch(currentFileURL)
-        if (res.ok) {
-          const text = await res.text()
+    const poll = () => {
+      chrome.runtime.sendMessage({ action: 'fetch', data: { url: currentFileURL } }, (res: string) => {
+        if (res !== undefined) {
           if (currentRaw === undefined || currentRaw === null) {
-            if (text) window.location.reload()
-          } else if (currentRaw !== text) {
-            currentRaw = text
-            renderMarkdown(text)
-            renderRaw(text)
+            if (res) window.location.reload()
+          } else if (currentRaw !== res) {
+            currentRaw = res
+            renderMarkdown(res)
+            renderRaw(res)
             renderToc()
-            if (rawPre) rawPre.textContent = text
+            if (rawPre) rawPre.textContent = res
           }
         }
-      } catch {
-        // ignore transient fetch errors
-      }
-      setTimeout(poll, 500)
+        setTimeout(poll, 500)
+      })
     }
-    void poll()
+    poll()
   }
 
   // Messages
@@ -643,12 +639,14 @@ async function init(): Promise<void> {
 
   function loadFileTreeDirectory(directoryURL: string, list: HTMLElement): void {
     list.textContent = 'Loading...'
-    fetch(directoryURL)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.text()
-      })
-      .then((html) => {
+    chrome.runtime.sendMessage(
+      { action: 'directory', data: { url: directoryURL } },
+      (html: string) => {
+        if (!html || chrome.runtime.lastError) {
+          list.textContent = 'Unable to load files'
+          return
+        }
+
         const entries = parseDirectoryListing(html, directoryURL).filter(
           (entry) => !data.hideDotFiles || !isDotEntry(entry),
         )
@@ -657,11 +655,10 @@ async function init(): Promise<void> {
           list.textContent = 'No markdown files'
           return
         }
+
         entries.forEach((entry) => list.appendChild(renderFileTreeEntry(entry)))
-      })
-      .catch(() => {
-        list.textContent = 'Unable to load files'
-      })
+      },
+    )
   }
 
   function renderFileTreeEntry(entry: FileTreeEntry): HTMLElement {
@@ -722,10 +719,16 @@ async function init(): Promise<void> {
     })
   }
 
-  async function readMarkdownFile(url: string): Promise<string> {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    return res.text()
+  function readMarkdownFile(url: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ action: 'readFile', data: { url } }, (res: string) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message))
+          return
+        }
+        resolve(res)
+      })
+    })
   }
 
   function updateLocationForCurrentFile(url: string): void {

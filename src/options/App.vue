@@ -35,7 +35,7 @@ const themes: { value: Theme; label: string }[] = [
 ]
 
 const fontSizes: { value: FontSize; label: string }[] = Object.entries(FONT_SIZE_MAP).map(
-  ([label, value]) => ({ value: label as FontSize, label: `${label} (${value}px)` }),
+  ([label]) => ({ value: label as FontSize, label }),
 )
 
 const codeThemes = [

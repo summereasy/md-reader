@@ -238,7 +238,7 @@ function setSidebarWidth(value: number): void {
 function setContentFontSize(fontSize?: FontSize): void {
   const value = fontSize && FONT_SIZE_MAP[fontSize]
     ? FONT_SIZE_MAP[fontSize]
-    : FONT_SIZE_MAP.Normal
+    : FONT_SIZE_MAP['Small']
   HTML.style.setProperty(CONTENT_FONT_SIZE_VAR, `${value}px`)
 }
 
@@ -827,11 +827,11 @@ async function init(): Promise<void> {
       button.classList.toggle('active', button.dataset.theme === data.pageTheme)
     })
     const fontSizes = Object.keys(FONT_SIZE_MAP) as FontSize[]
-    const fontSize = data.fontSize || 'Normal'
+    const fontSize = data.fontSize || 'Small'
     const fontSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="fontSize"]')
     if (fontSlider) fontSlider.value = String(Math.max(0, fontSizes.indexOf(fontSize)))
     const fontSizeOutput = optionsMenu.querySelector<HTMLOutputElement>('[data-font-size-output]')
-    if (fontSizeOutput) fontSizeOutput.value = `${FONT_SIZE_MAP[fontSize]}px`
+    if (fontSizeOutput) fontSizeOutput.value = fontSize
   }
 
   function getFontSizeAtIndex(index: number): FontSize {

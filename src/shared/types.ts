@@ -21,15 +21,15 @@ export type Theme = 'light' | 'dark' | 'nordic' | 'auto'
 
 export type CodeTheme = 'auto' | 'light' | 'dark'
 
-export type FontSize = 'Tiny' | 'Small' | 'Normal' | 'Medium' | 'Large' | 'Extra Large'
+export type FontSize = 'Extreme Small' | 'Very Small' | 'Small' | 'Medium' | 'Large' | 'Extreme Large'
 
 export const FONT_SIZE_MAP: Record<FontSize, number> = {
-  Tiny: 12,
-  Small: 14,
-  Normal: 16,
-  Medium: 18,
-  Large: 20,
-  'Extra Large': 24,
+  'Extreme Small': 12,
+  'Very Small': 14,
+  'Small': 16,
+  'Medium': 18,
+  'Large': 20,
+  'Extreme Large': 24,
 }
 
 export interface StorageData {
@@ -57,7 +57,7 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     mdPlugins: [...MD_PLUGINS],
     pageTheme: 'light',
     codeTheme: 'auto',
-    fontSize: 'Normal',
+    fontSize: 'Small',
     hideDotFiles: false,
     sideWidth: 320,
     fileTreeRootURL: undefined,

@@ -773,7 +773,7 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
   border: none;
   padding: 0.67rem 1rem;
   color: var(--hljs-mono-1);
-  font-size: 0.82rem;
+  font-size: 0.82em;
   word-break: normal;
 }
 

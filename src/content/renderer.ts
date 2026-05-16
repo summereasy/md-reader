@@ -46,10 +46,10 @@ const successSvg = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" 
 
 const copyBtnHtml = `<button class="md-reader__btn md-reader__btn--copy" title="Copy"><span class="md-reader__copy-icon">${copySvg}</span><span class="md-reader__copy-success">${successSvg}</span></button>`
 
-type ResolvedTheme = 'light' | 'dark' | 'nordic' | 'claude'
+type ResolvedTheme = 'light' | 'dark' | 'nordic' | 'claude' | 'catppuccin' | 'tokyo-night' | 'github-dark' | 'everforest' | 'catppuccin-latte' | 'github-light' | 'rose-pine-dawn' | 'everforest-light'
 
 function getThemeMd(theme: ResolvedTheme): 'dark' | 'default' {
-  return theme === 'dark' || theme === 'nordic' ? 'dark' : 'default'
+  return theme === 'dark' || theme === 'nordic' || theme === 'catppuccin' || theme === 'tokyo-night' || theme === 'github-dark' || theme === 'everforest' ? 'dark' : 'default'
 }
 
 type PluginFactory = (opts: { theme: ResolvedTheme }) => [unknown, ...unknown[]]

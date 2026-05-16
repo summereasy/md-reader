@@ -37,7 +37,7 @@ const FILE_TREE_ROOT_STORAGE_KEY = 'fileTreeRootURL'
 const CURRENT_FILE_QUERY_KEY = 'mdReaderFile'
 const KATEX_STYLE_ID = 'md-reader-katex-style'
 const darkMQL = window.matchMedia('(prefers-color-scheme: dark)')
-type ResolvedTheme = 'light' | 'dark' | 'nordic' | 'claude'
+type ResolvedTheme = 'light' | 'dark' | 'nordic' | 'claude' | 'catppuccin' | 'tokyo-night' | 'github-dark' | 'everforest' | 'catppuccin-latte' | 'github-light' | 'rose-pine-dawn' | 'everforest-light'
 
 interface TocItem {
   head: HTMLElement

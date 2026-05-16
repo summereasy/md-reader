@@ -18,17 +18,25 @@ export const MD_PLUGINS = [
 export type MdPlugin = (typeof MD_PLUGINS)[number]
 
 export type ColorMode = 'light' | 'dark' | 'auto'
-export type LightTheme = 'default' | 'claude'
-export type DarkTheme = 'default' | 'nordic'
+export type LightTheme = 'default' | 'claude' | 'catppuccin-latte' | 'github-light' | 'rose-pine-dawn' | 'everforest-light'
+export type DarkTheme = 'default' | 'nordic' | 'catppuccin' | 'tokyo-night' | 'github-dark' | 'everforest'
 
 export const LIGHT_THEMES: { value: LightTheme; label: string }[] = [
   { value: 'default', label: 'Default' },
   { value: 'claude', label: 'Claude' },
+  { value: 'catppuccin-latte', label: 'Catppuccin' },
+  { value: 'github-light', label: 'GitHub' },
+  { value: 'rose-pine-dawn', label: 'Rosé Pine' },
+  { value: 'everforest-light', label: 'Everforest' },
 ]
 
 export const DARK_THEMES: { value: DarkTheme; label: string }[] = [
   { value: 'default', label: 'Default' },
   { value: 'nordic', label: 'Nordic' },
+  { value: 'catppuccin', label: 'Catppuccin' },
+  { value: 'tokyo-night', label: 'Tokyo Night' },
+  { value: 'github-dark', label: 'GitHub' },
+  { value: 'everforest', label: 'Everforest' },
 ]
 
 export type CodeTheme = 'auto' | 'light' | 'dark'

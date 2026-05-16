@@ -45,6 +45,8 @@ export const FONT_SIZE_MAP: Record<FontSize, number> = {
   'Extreme Large': 28,
 }
 
+export type ContentWidthMode = 'auto' | 'manual'
+
 export interface StorageData {
   enable?: boolean
   refresh?: boolean
@@ -60,6 +62,8 @@ export interface StorageData {
   hideDotFiles?: boolean
   sideWidth?: number
   fileTreeRootURL?: string
+  contentWidthMode?: ContentWidthMode
+  contentWidthPercent?: number
 }
 
 export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
@@ -78,6 +82,8 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     hideDotFiles: false,
     sideWidth: 320,
     fileTreeRootURL: undefined,
+    contentWidthMode: 'auto',
+    contentWidthPercent: 100,
     ...merge,
   }
 }

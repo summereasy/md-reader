@@ -47,6 +47,8 @@ const actionMap: Record<string, string> = {
   fontSize: 'updateFontSize',
   hiddenSide: 'toggleSide',
   hideDotFiles: 'updateFileTreeOptions',
+  contentWidthMode: 'updateContentWidthMode',
+  contentWidthPercent: 'updateContentWidthPercent',
 }
 
 function updatePage(key: string, value?: unknown): void {

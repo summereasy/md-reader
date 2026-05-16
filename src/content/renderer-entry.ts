@@ -3,7 +3,7 @@ import throttle from 'lodash.throttle'
 import { storage } from '@/shared/storage'
 import { mdRender } from './renderer'
 import { FONT_SIZE_MAP, LIGHT_THEMES, DARK_THEMES, getDefaultData } from '@/shared/types'
-import type { FontSize, StorageData, ColorMode, LightTheme, DarkTheme } from '@/shared/types'
+import type { FontSize, StorageData, ColorMode, LightTheme, DarkTheme, ContentWidthMode } from '@/shared/types'
 import { getEventBus } from './plugins/event'
 import blockCopyPlugin from './plugins/block-copy'
 import imgViewerPlugin from './plugins/img-viewer'
@@ -401,9 +401,12 @@ async function init(): Promise<void> {
   alignBtn.title = 'Toggle centered'
   alignBtn.innerHTML = ICONS.alignCenter
   alignBtn.addEventListener('click', () => {
-    const centered = !mdContent.classList.contains(CN.CENTERED)
+    const centered = !data.centered
+    data.centered = centered
     mdContent.classList.toggle(CN.CENTERED, centered)
     saveConfig('centered', centered)
+    applyContentWidth()
+    updateQuickButtons()
   })
 
   function updateQuickButtons(): void {
@@ -498,6 +501,11 @@ async function init(): Promise<void> {
     }
   })
 
+  // Window resize — reapply manual content width
+  window.addEventListener('resize', throttle(() => {
+    if (data.contentWidthMode === 'manual') applyContentWidth()
+  }, 100))
+
   // Auto refresh
   let pollTimer: number | undefined
   if (data.refresh) {
@@ -553,7 +561,9 @@ async function init(): Promise<void> {
         updateOptionsMenuState()
         break
       case 'toggleRefresh': clearTimeout(pollTimer); if (value) window.location.reload(); break
-      case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); updateQuickButtons(); break
+      case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); updateQuickButtons(); applyContentWidth(); break
+      case 'updateContentWidthMode':
+      case 'updateContentWidthPercent': applyContentWidth(); updateOptionsMenuState(); break
       case 'toggleSide': {
         if (window.innerWidth <= 960) {
           const expanded = BODY.classList.toggle(CN.SIDE_EXPANDED)
@@ -574,6 +584,7 @@ async function init(): Promise<void> {
         } else {
           BODY.classList.toggle(CN.SIDE_COLLAPSED)
         }
+        setTimeout(() => applyContentWidth(), 350)
         break
       }
     }
@@ -597,6 +608,7 @@ async function init(): Promise<void> {
     existingIcon.setAttribute('href', chrome.runtime.getURL('assets/logo-stroke.png'))
   }
   BODY.classList.add('md-reader')
+  applyContentWidth()
   if (queryFileURL) {
     await openMarkdownFile(queryFileURL, { updateHistory: false })
   }
@@ -1039,6 +1051,25 @@ async function init(): Promise<void> {
           data-option="fontSize"
         />
       </div>
+      <div class="md-reader__options-group">
+        <div class="md-reader__options-label">Content width</div>
+        <div class="md-reader__side-switch-control" data-width-mode-switch>
+          <button type="button" data-width-mode="auto">Auto</button>
+          <button type="button" data-width-mode="manual">Manual</button>
+        </div>
+        <div class="md-reader__options-slider-head" data-width-slider-head style="margin-top:10px">
+          <div class="md-reader__options-label" style="margin-bottom:0">Width</div>
+          <output data-width-output></output>
+        </div>
+        <input
+          class="md-reader__options-slider"
+          type="range"
+          min="20"
+          max="100"
+          step="1"
+          data-option="contentWidth"
+        />
+      </div>
     `
 
     const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')
@@ -1064,6 +1095,28 @@ async function init(): Promise<void> {
     fontSlider?.addEventListener('change', () => {
       saveConfig('fontSize', getFontSizeAtIndex(Number(fontSlider.value)))
     })
+
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-width-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const mode = button.dataset.widthMode as ContentWidthMode
+        data.contentWidthMode = mode
+        saveConfig('contentWidthMode', mode)
+        applyContentWidth()
+        updateOptionsMenuState()
+      })
+    })
+
+    const widthSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="contentWidth"]')
+    widthSlider?.addEventListener('input', () => {
+      const percent = Number(widthSlider.value)
+      data.contentWidthPercent = percent
+      applyContentWidth()
+      updateOptionsMenuState()
+    })
+    widthSlider?.addEventListener('change', () => {
+      saveConfig('contentWidthPercent', Number(widthSlider.value))
+    })
+
     updateOptionsMenuState()
   }
 
@@ -1083,11 +1136,42 @@ async function init(): Promise<void> {
     if (fontSlider) fontSlider.value = String(Math.max(0, fontSizes.indexOf(fontSize)))
     const fontSizeOutput = optionsMenu.querySelector<HTMLOutputElement>('[data-font-size-output]')
     if (fontSizeOutput) fontSizeOutput.value = fontSize
+
+    const widthMode = data.contentWidthMode ?? 'auto'
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-width-mode]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.widthMode === widthMode)
+    })
+    const widthSliderHead = optionsMenu.querySelector<HTMLElement>('[data-width-slider-head]')
+    const widthSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="contentWidth"]')
+    const widthOutput = optionsMenu.querySelector<HTMLOutputElement>('[data-width-output]')
+    const isManual = widthMode === 'manual'
+    if (widthSliderHead) widthSliderHead.style.display = isManual ? '' : 'none'
+    if (widthSlider) { widthSlider.value = String(data.contentWidthPercent ?? 100); widthSlider.style.display = isManual ? '' : 'none' }
+    if (widthOutput) widthOutput.value = `${data.contentWidthPercent ?? 100}%`
   }
 
   function getFontSizeAtIndex(index: number): FontSize {
     const fontSizes = Object.keys(FONT_SIZE_MAP) as FontSize[]
     return fontSizes[Math.min(fontSizes.length - 1, Math.max(0, index))] || 'Normal'
+  }
+
+  function applyContentWidth(): void {
+    const mode = data.contentWidthMode ?? 'auto'
+    if (mode === 'auto') {
+      mdContent.style.removeProperty('max-width')
+      mdContent.style.removeProperty('margin-left')
+      mdContent.style.removeProperty('margin-right')
+      mdContent.classList.toggle(CN.CENTERED, !!data.centered)
+    } else {
+      mdContent.classList.remove(CN.CENTERED)
+      const pct = (data.contentWidthPercent ?? 100) / 100
+      const paddingLeft = parseFloat(getComputedStyle(mdBody).paddingLeft) || 0
+      const available = mdBody.offsetWidth - paddingLeft
+      const w = Math.round(available * pct)
+      mdContent.style.maxWidth = `${w}px`
+      mdContent.style.marginLeft = data.centered ? 'auto' : '0'
+      mdContent.style.marginRight = 'auto'
+    }
   }
 
   function saveConfig<K extends keyof StorageData>(key: K, value: StorageData[K]): void {

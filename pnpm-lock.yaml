@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@md-reader/markdown-it-mermaid':
-        specifier: ^0.5.1
-        version: 0.5.1
       '@mdit/plugin-alert':
         specifier: ^0.22.1
         version: 0.22.4(markdown-it@13.0.2)
@@ -68,6 +65,9 @@ importers:
       markdown-it-task-lists:
         specifier: ^2.1.1
         version: 2.1.1
+      mermaid:
+        specifier: 9.4.3
+        version: 9.4.3
       tdesign-vue-next:
         specifier: ^1.15.0
         version: 1.19.2(vue@3.5.34(typescript@5.9.3))
@@ -321,9 +321,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@md-reader/markdown-it-mermaid@0.5.1':
-    resolution: {integrity: sha512-+2lu4+qtrGMLfccPkxtIVNgOdGB4yqeJsoQoQ/PL4gds+GTiEFv6D1JG2QpvmX3jwlqa0UAMnQQA3yO3QPoAaQ==}
 
   '@mdit/plugin-alert@0.22.4':
     resolution: {integrity: sha512-6j7nvq8MkKrT2DxQ5/dlK3vhwU0qd7i3ShP/Ns41ltyjsT/H4PiXrW6itRPLJqKhX5vAy4akK0djSALkawoFNQ==}
@@ -1177,9 +1174,6 @@ packages:
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
 
-  murmurhash-js@1.0.0:
-    resolution: {integrity: sha512-TvmkNhkv8yct0SVBSy+o8wYzXjE4Zz3PCesbfs8HiCXXdcTuocApFv11UWlNFWKYsP2okqrhb7JNlSm9InBhIw==}
-
   nanoid@3.3.12:
     resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
@@ -1560,11 +1554,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@md-reader/markdown-it-mermaid@0.5.1':
-    dependencies:
-      mermaid: 9.4.3
-      murmurhash-js: 1.0.0
 
   '@mdit/plugin-alert@0.22.4(markdown-it@13.0.2)':
     dependencies:
@@ -2404,8 +2393,6 @@ snapshots:
   mrmime@2.0.1: {}
 
   muggle-string@0.4.1: {}
-
-  murmurhash-js@1.0.0: {}
 
   nanoid@3.3.12: {}
 

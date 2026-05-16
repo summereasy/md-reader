@@ -12,7 +12,6 @@ import mFootnote from 'markdown-it-footnote'
 import mTaskLists from 'markdown-it-task-lists'
 import mToc from 'markdown-it-table-of-contents'
 import mKatex from '@traptitech/markdown-it-katex'
-import mMermaid from '@md-reader/markdown-it-mermaid'
 import mAlert from './plugins/alert'
 import mMultimdTable from 'markdown-it-multimd-table'
 function escapeHtml(str: string): string {
@@ -22,6 +21,22 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 }
+// Lazy mermaid: outputs <div> placeholders; actual rendering is async in renderer-entry.
+export const mermaidBlocks: string[] = []
+
+function lazyMermaidPlugin(md: any) {
+  const renderer = md.renderer.rules.fence.bind(md.renderer.rules)
+  md.renderer.rules.fence = (tokens: any[], idx: number, opts: any, env: any, self: any) => {
+    const token = tokens[idx]
+    if (token.info.trim() === 'mermaid') {
+      const blockIdx = mermaidBlocks.length
+      mermaidBlocks.push(token.content.trim())
+      return `<div class="mermaid-placeholder" data-mermaid-idx="${blockIdx}"></div>`
+    }
+    return renderer(tokens, idx, opts, env, self)
+  }
+}
+
 import type { MdPlugin } from '@/shared/types'
 import { MD_PLUGINS } from '@/shared/types'
 
@@ -47,10 +62,7 @@ const PLUGINS: Record<string, any[] | PluginFactory> = {
   Ins: [mIns],
   Abbr: [mAbbr],
   Katex: [mKatex, { strict: false, throwOnError: false }],
-  Mermaid: ({ theme }) => [
-    mMermaid,
-    { theme: getThemeMd(theme), themeVariables: undefined },
-  ],
+  Mermaid: [lazyMermaidPlugin],
   Mark: [mMark],
   Deflist: [mDeflist],
   Footnote: [mFootnote],
@@ -124,6 +136,7 @@ export const mdRender: MdRenderFn = (code, options) => {
   if (!mdRender._md || options) {
     mdRender._md = initMarkdownIt(options)
   }
+  mermaidBlocks.length = 0
   const filtered = removeFrontmatter(code)
   return mdRender._md.render(filtered)
 }

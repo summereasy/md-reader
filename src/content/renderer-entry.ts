@@ -1,7 +1,7 @@
 // Heavy renderer entry — loaded dynamically by the thin content script
 import throttle from 'lodash.throttle'
 import { storage } from '@/shared/storage'
-import { mdRender } from './renderer'
+import { mdRender, mermaidBlocks } from './renderer'
 import { FONT_SIZE_MAP, LIGHT_THEMES, DARK_THEMES, getDefaultData } from '@/shared/types'
 import type { FontSize, StorageData, ColorMode, LightTheme, DarkTheme, ContentWidthMode } from '@/shared/types'
 import { getEventBus } from './plugins/event'
@@ -277,6 +277,48 @@ function getQueryFileURL(fileTreeRootURL: string | null): string | null {
   return isFileInDirectory(fileURL, fileTreeRootURL) ? fileURL : null
 }
 
+// --- Mermaid lazy loading --------------------------------------------------
+let mermaidGen = 0
+
+async function renderMermaidDiagrams(container: HTMLElement, theme: ResolvedTheme): Promise<void> {
+  const placeholders = container.querySelectorAll<HTMLElement>('.mermaid-placeholder')
+  if (!placeholders.length) return
+
+  const gen = ++mermaidGen
+  const mermaid = (await import('mermaid')).default
+  if (gen !== mermaidGen) return // a newer render superseded us
+
+  mermaid.initialize({
+    theme: theme === 'dark' || theme === 'nordic' ? 'dark' : 'default',
+    themeVariables: undefined,
+  })
+
+  for (const el of Array.from(placeholders)) {
+    if (gen !== mermaidGen) return
+    if (!el.isConnected) continue
+    const idx = Number(el.dataset.mermaidIdx ?? '-1')
+    const raw = mermaidBlocks[idx]
+    if (raw == null) continue
+    try {
+      const id = `mermaid-${gen}-${idx}`
+      let svg = ''
+      mermaid.mermaidAPI.render(id, raw, (sc: string) => { svg = sc })
+      if (el.isConnected) {
+        el.outerHTML = `<pre class="mermaid">${svg}</pre>`
+      }
+    } catch (err: any) {
+      if (el.isConnected) {
+        const msg = String(err?.message ?? err)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+        el.outerHTML = `<pre class="mermaid-error">${msg}</pre>`
+      }
+    }
+  }
+}
+// ---------------------------------------------------------------------------
+
 export default function initContentScript(): void {
   init()
 }
@@ -322,6 +364,7 @@ async function init(): Promise<void> {
     theme: resolveTheme(data),
     plugins: data.mdPlugins,
   })
+  void renderMermaidDiagrams(mdContent, resolveTheme(data))
 
   const rawContent = document.createElement('pre')
   rawContent.className = CN.RAW_CONTENT
@@ -619,6 +662,7 @@ async function init(): Promise<void> {
       theme: resolveTheme(data),
       plugins: data.mdPlugins,
     })
+    void renderMermaidDiagrams(mdContent, resolveTheme(data))
   }
 
   function renderRaw(raw: string): void {

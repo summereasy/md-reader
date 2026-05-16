@@ -71,6 +71,16 @@ declare module '@md-reader/markdown-it-mermaid' {
   export default plugin
 }
 
+declare module 'mermaid' {
+  const mermaid: {
+    initialize(config: any): void
+    mermaidAPI: {
+      render(id: string, code: string, callback?: (svg: string) => void): { svg: string }
+    }
+  }
+  export default mermaid
+}
+
 declare module 'markdown-it-multimd-table' {
   import type { PluginWithOptions } from 'markdown-it'
   const plugin: PluginWithOptions

@@ -264,7 +264,7 @@ body.md-reader *:not(.mermaid *) {
 
 html[data-mdr-theme],
 body.md-reader,
-body.md-reader .md-reader__side,
+body.md-reader .md-reader__side-scroll,
 body.md-reader .md-reader__markdown-content,
 body.md-reader .md-reader__markdown-content pre,
 body.md-reader .md-reader__markdown-content table,
@@ -275,7 +275,7 @@ body.md-reader .md-reader__markdown-content .katex-display {
 
 html[data-mdr-theme]::-webkit-scrollbar,
 body.md-reader::-webkit-scrollbar,
-body.md-reader .md-reader__side::-webkit-scrollbar,
+body.md-reader .md-reader__side-scroll::-webkit-scrollbar,
 body.md-reader .md-reader__markdown-content::-webkit-scrollbar,
 body.md-reader .md-reader__markdown-content pre::-webkit-scrollbar,
 body.md-reader .md-reader__markdown-content table::-webkit-scrollbar,
@@ -286,7 +286,7 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar {
 
 html[data-mdr-theme]::-webkit-scrollbar-track,
 body.md-reader::-webkit-scrollbar-track,
-body.md-reader .md-reader__side::-webkit-scrollbar-track,
+body.md-reader .md-reader__side-scroll::-webkit-scrollbar-track,
 body.md-reader .md-reader__markdown-content::-webkit-scrollbar-track,
 body.md-reader .md-reader__markdown-content pre::-webkit-scrollbar-track,
 body.md-reader .md-reader__markdown-content table::-webkit-scrollbar-track,
@@ -296,7 +296,7 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-tr
 
 html[data-mdr-theme]::-webkit-scrollbar-thumb,
 body.md-reader::-webkit-scrollbar-thumb,
-body.md-reader .md-reader__side::-webkit-scrollbar-thumb,
+body.md-reader .md-reader__side-scroll::-webkit-scrollbar-thumb,
 body.md-reader .md-reader__markdown-content::-webkit-scrollbar-thumb,
 body.md-reader .md-reader__markdown-content pre::-webkit-scrollbar-thumb,
 body.md-reader .md-reader__markdown-content table::-webkit-scrollbar-thumb,
@@ -310,7 +310,7 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
 
 html[data-mdr-theme]::-webkit-scrollbar-thumb:hover,
 body.md-reader::-webkit-scrollbar-thumb:hover,
-body.md-reader .md-reader__side::-webkit-scrollbar-thumb:hover,
+body.md-reader .md-reader__side-scroll::-webkit-scrollbar-thumb:hover,
 body.md-reader .md-reader__markdown-content::-webkit-scrollbar-thumb:hover,
 body.md-reader .md-reader__markdown-content pre::-webkit-scrollbar-thumb:hover,
 body.md-reader .md-reader__markdown-content table::-webkit-scrollbar-thumb:hover,
@@ -362,8 +362,8 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
   bottom: 0;
   left: 0;
   width: var(--mdr-side-width);
-  overflow: auto;
-  padding: 22px 0;
+  overflow: visible;
+  padding: 0;
   background: var(--mdr-side-bg);
   border-right: 1px solid var(--mdr-border);
   list-style: none;
@@ -376,26 +376,34 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
   z-index: 1;
 }
 
+.md-reader__side-scroll {
+  overflow: auto;
+  padding: 22px 0;
+  height: 100%;
+}
+
 .md-reader__side-resize-handle {
   position: absolute;
   top: 0;
-  right: -18px;
+  right: 0;
   bottom: 0;
-  width: 24px;
+  width: 8px;
   cursor: col-resize;
   z-index: 2;
+  transform: translateX(50%);
 }
 
 .md-reader__side-resize-handle::after {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
+  left: 50%;
   bottom: 0;
   width: 4px;
   border-radius: 2px;
   background: transparent;
   transition: background 0.15s, box-shadow 0.15s;
+  transform: translateX(-50%);
 }
 
 .md-reader__side-resize-handle:hover::after,
@@ -541,6 +549,81 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
   opacity: 0.45;
 }
 
+.md-reader__side-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 16px 18px;
+}
+
+.md-reader__side-header .md-reader__side-switch-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.md-reader__side-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border: 1px solid var(--mdr-border);
+  border-radius: 16px;
+  background: var(--mdr-hover-bg);
+  color: var(--mdr-text);
+  cursor: pointer;
+  opacity: 0.72;
+  transition: background 0.12s, color 0.12s, opacity 0.12s;
+}
+
+.md-reader__side-search-btn:hover,
+.md-reader__side-search-btn.active {
+  color: var(--mdr-link);
+  opacity: 1;
+  background: var(--mdr-hover-bg-strong);
+}
+
+.md-reader__side-search-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.md-reader__side-search-wrap {
+  padding: 0 16px 0;
+  display: none;
+}
+
+.md-reader__side-search-wrap.open {
+  display: block;
+}
+
+.md-reader__side-search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--mdr-border);
+  border-radius: 8px;
+  background: var(--mdr-control-bg);
+  color: var(--mdr-text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.md-reader__side-search-input::placeholder {
+  color: var(--mdr-text-secondary);
+  opacity: 0.6;
+}
+
+.md-reader__side-search-input:focus {
+  border-color: var(--mdr-link);
+}
+
 .md-reader__side-file-tree,
 .md-reader__side-toc {
   display: none;
@@ -566,15 +649,25 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
 
 .md-reader__file-tree-title {
   overflow: hidden;
-  padding: 0 10px 12px;
-  font-size: 11px;
+  padding: 8px 10px 12px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--mdr-text);
   opacity: 0.72;
+}
+
+.md-reader__file-tree-title--clickable {
+  cursor: pointer;
+  transition: color 0.12s, opacity 0.12s;
+}
+
+.md-reader__file-tree-title--clickable:hover {
+  opacity: 1;
+  color: var(--mdr-link);
 }
 
 .md-reader__file-tree-list:empty {

@@ -336,8 +336,12 @@ async function init(): Promise<void> {
   const mdSide = createSidebar()
   const sideResizeHandle = document.createElement('div')
   sideResizeHandle.className = 'md-reader__side-resize-handle'
+  const sideScroll = document.createElement('div')
+  sideScroll.className = 'md-reader__side-scroll'
   const sideSwitch = document.createElement('li')
   sideSwitch.className = 'md-reader__side-switch'
+  const searchWrap = document.createElement('li')
+  searchWrap.className = 'md-reader__side-search-wrap'
   const fileTree = document.createElement('li')
   fileTree.className = 'md-reader__side-file-tree'
   const tocTree = document.createElement('li')
@@ -418,8 +422,8 @@ async function init(): Promise<void> {
   let reloading = false
   renderSide()
 
-  mdSide.addEventListener('mouseenter', () => { sideHover = true })
-  mdSide.addEventListener('mouseleave', () => { sideHover = false })
+  sideScroll.addEventListener('mouseenter', () => { sideHover = true })
+  sideScroll.addEventListener('mouseleave', () => { sideHover = false })
 
   document.addEventListener('scroll', throttle(() => {
     const scrollTop = document.documentElement.scrollTop
@@ -572,10 +576,13 @@ async function init(): Promise<void> {
 
   function renderSide(): void {
     renderToc()
+    sideScroll.innerHTML = ''
+    sideScroll.appendChild(sideSwitch)
+    sideScroll.appendChild(searchWrap)
+    if (fileTreeRootURL) sideScroll.appendChild(fileTree)
+    sideScroll.appendChild(tocTree)
     mdSide.innerHTML = ''
-    mdSide.appendChild(sideSwitch)
-    if (fileTreeRootURL) mdSide.appendChild(fileTree)
-    mdSide.appendChild(tocTree)
+    mdSide.appendChild(sideScroll)
     mdSide.appendChild(sideResizeHandle)
     updateSideMode(sideMode)
   }
@@ -619,13 +626,151 @@ async function init(): Promise<void> {
 
   function renderSideSwitch(): void {
     sideSwitch.innerHTML = ''
+    sideSwitch.className = 'md-reader__side-header'
     const switcher = document.createElement('div')
     switcher.className = 'md-reader__side-switch-control'
     switcher.append(
       createSideSwitchButton('files', 'Files'),
       createSideSwitchButton('toc', 'TOC'),
     )
-    sideSwitch.appendChild(switcher)
+
+    const searchBtn = document.createElement('button')
+    searchBtn.type = 'button'
+    searchBtn.className = 'md-reader__side-search-btn'
+    searchBtn.title = 'Filter'
+    searchBtn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+
+    searchWrap.className = 'md-reader__side-search-wrap'
+    searchWrap.innerHTML = ''
+    const searchInput = document.createElement('input')
+    searchInput.type = 'text'
+    searchInput.className = 'md-reader__side-search-input'
+    searchInput.placeholder = 'Filter...'
+    searchWrap.appendChild(searchInput)
+
+    searchBtn.addEventListener('click', () => {
+      const opening = !searchWrap.classList.contains('open')
+      searchWrap.classList.toggle('open', opening)
+      searchBtn.classList.toggle('active', opening)
+      if (opening) {
+        searchInput.focus()
+      } else {
+        searchInput.value = ''
+        applyFilter('')
+      }
+    })
+
+    searchInput.addEventListener('input', () => {
+      applyFilter(searchInput.value.trim())
+    })
+
+    sideSwitch.append(switcher, searchBtn)
+  }
+
+  function applyFilter(query: string): void {
+    const q = query.toLowerCase()
+    if (sideMode === 'files') {
+      filterFileTree(q)
+    } else {
+      filterToc(q)
+    }
+  }
+
+  function ensureDirLoaded(item: HTMLElement): Promise<void> {
+    const childList = item.querySelector<HTMLElement>(':scope > .md-reader__file-tree-list')
+    if (!childList || childList.dataset.loaded === 'true') return Promise.resolve()
+    const dirUrl = item.dataset.dirUrl
+    if (!dirUrl) return Promise.resolve()
+    childList.dataset.loaded = 'true'
+    item.classList.add('expanded')
+    childList.hidden = false
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: 'directory', data: { url: dirUrl } },
+        (html: string) => {
+          if (!html || chrome.runtime.lastError) {
+            childList.innerHTML = ''
+            resolve()
+            return
+          }
+          const entries = parseDirectoryListing(html, dirUrl).filter(
+            (entry) => !data.hideDotFiles || !isDotEntry(entry),
+          )
+          childList.innerHTML = ''
+          entries.forEach((entry) => childList.appendChild(renderFileTreeEntry(entry)))
+          resolve()
+        },
+      )
+    })
+  }
+
+  async function filterFileTree(q: string): Promise<void> {
+    if (!q) {
+      fileTree.querySelectorAll<HTMLElement>('.md-reader__file-tree-item').forEach((item) => item.style.display = '')
+      return
+    }
+    // First, recursively load all unloaded directories
+    await loadAllDirs(fileTree)
+    // Now filter
+    const items = fileTree.querySelectorAll<HTMLElement>('.md-reader__file-tree-item')
+    items.forEach((item) => {
+      const nameEl = item.querySelector<HTMLElement>(':scope > a .md-reader__file-tree-name, :scope > button .md-reader__file-tree-name')
+      const name = nameEl?.textContent?.toLowerCase() ?? ''
+      const isDir = item.classList.contains('md-reader__file-tree-item--directory')
+      if (!isDir) {
+        item.style.display = name.includes(q) ? '' : 'none'
+      } else {
+        const hasVisibleChild = Array.from(item.querySelectorAll<HTMLElement>(':scope .md-reader__file-tree-item--file'))
+          .some((child) => {
+            const childName = child.querySelector<HTMLElement>('.md-reader__file-tree-name')?.textContent?.toLowerCase() ?? ''
+            return childName.includes(q)
+          })
+        const selfMatch = name.includes(q)
+        item.style.display = (selfMatch || hasVisibleChild) ? '' : 'none'
+        if (hasVisibleChild) {
+          item.classList.add('expanded')
+          const childList = item.querySelector<HTMLElement>(':scope > .md-reader__file-tree-list')
+          if (childList) childList.hidden = false
+        }
+      }
+    })
+  }
+
+  async function loadAllDirs(container: HTMLElement): Promise<void> {
+    const unloaded = container.querySelectorAll<HTMLElement>('.md-reader__file-tree-item--directory')
+    const promises: Promise<void>[] = []
+    unloaded.forEach((item) => {
+      const childList = item.querySelector<HTMLElement>(':scope > .md-reader__file-tree-list')
+      if (childList && childList.dataset.loaded !== 'true') {
+        promises.push(
+          ensureDirLoaded(item).then(() => loadAllDirs(item)),
+        )
+      }
+    })
+    await Promise.all(promises)
+  }
+
+  function filterToc(q: string): void {
+    const items = tocList.querySelectorAll<HTMLElement>('.md-reader__toc-item')
+    if (!q) {
+      items.forEach((item) => item.style.display = '')
+      return
+    }
+    items.forEach((item) => {
+      const linkEl = item.querySelector<HTMLElement>(':scope > .md-reader__toc-row a')
+      const text = linkEl?.textContent?.toLowerCase() ?? ''
+      const hasMatchingChild = Array.from(item.querySelectorAll<HTMLElement>(':scope .md-reader__toc-item'))
+        .some((child) => {
+          const childLink = child.querySelector<HTMLElement>(':scope > .md-reader__toc-row a')
+          return (childLink?.textContent?.toLowerCase() ?? '').includes(q)
+        })
+      item.style.display = (text.includes(q) || hasMatchingChild) ? '' : 'none'
+      if (hasMatchingChild) {
+        item.classList.add('expanded')
+        const childList = item.querySelector<HTMLElement>(':scope > .md-reader__toc-children')
+        if (childList) childList.style.display = ''
+      }
+    })
   }
 
   function createSideSwitchButton(mode: 'files' | 'toc', label: string): HTMLButtonElement {
@@ -650,8 +795,29 @@ async function init(): Promise<void> {
   function renderFileTree(rootURL: string): void {
     fileTree.innerHTML = ''
     const title = document.createElement('div')
-    title.className = 'md-reader__file-tree-title'
+    title.className = 'md-reader__file-tree-title md-reader__file-tree-title--clickable'
     title.textContent = getFileName(rootURL) || 'Files'
+    title.title = 'Click to expand all / collapse to first layer'
+    title.style.cursor = 'pointer'
+    let allExpanded = false
+    title.addEventListener('click', async () => {
+      if (!allExpanded) {
+        await loadAllDirs(fileTree)
+        fileTree.querySelectorAll<HTMLElement>('.md-reader__file-tree-item--directory').forEach((item) => {
+          item.classList.add('expanded')
+          const childList = item.querySelector<HTMLElement>(':scope > .md-reader__file-tree-list')
+          if (childList) childList.hidden = false
+        })
+        allExpanded = true
+      } else {
+        fileTree.querySelectorAll<HTMLElement>('.md-reader__file-tree-item--directory').forEach((item) => {
+          item.classList.remove('expanded')
+          const childList = item.querySelector<HTMLElement>(':scope > .md-reader__file-tree-list')
+          if (childList) childList.hidden = true
+        })
+        allExpanded = false
+      }
+    })
 
     const list = document.createElement('ul')
     list.className = 'md-reader__file-tree-list'
@@ -688,6 +854,7 @@ async function init(): Promise<void> {
     item.className = `md-reader__file-tree-item md-reader__file-tree-item--${entry.type}`
 
     if (entry.type === 'directory') {
+      item.dataset.dirUrl = entry.url
       const button = document.createElement('button')
       const childList = document.createElement('ul')
       childList.className = 'md-reader__file-tree-list'

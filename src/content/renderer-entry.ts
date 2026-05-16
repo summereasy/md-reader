@@ -541,6 +541,18 @@ async function init(): Promise<void> {
   meta.name = 'referrer'
   meta.content = 'no-referrer'
   HEAD.appendChild(meta)
+
+  // Set tab favicon to the extension logo
+  const existingIcon = HEAD.querySelector('link[rel~="icon"]')
+  if (!existingIcon) {
+    const icon = document.createElement('link')
+    icon.rel = 'icon'
+    icon.type = 'image/png'
+    icon.href = chrome.runtime.getURL('assets/logo-stroke.png')
+    HEAD.appendChild(icon)
+  } else {
+    existingIcon.setAttribute('href', chrome.runtime.getURL('assets/logo-stroke.png'))
+  }
   BODY.classList.add('md-reader')
   if (queryFileURL) {
     await openMarkdownFile(queryFileURL, { updateHistory: false })

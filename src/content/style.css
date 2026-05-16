@@ -765,8 +765,8 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
   margin-top: 0.35em;
 }
 
-.md-reader__markdown-content h1 { font-size: 2em; border-bottom: 1px solid var(--mdr-border); padding-bottom: 0.3em; }
-.md-reader__markdown-content h2 { font-size: 1.5em; border-bottom: 1px solid var(--mdr-border); padding-bottom: 0.3em; }
+.md-reader__markdown-content h1 { font-size: 2em; }
+.md-reader__markdown-content h2 { font-size: 1.5em; }
 .md-reader__markdown-content h3 { font-size: 1.25em; }
 .md-reader__markdown-content h4 { font-size: 1em; }
 .md-reader__markdown-content h5 { font-size: 0.875em; }

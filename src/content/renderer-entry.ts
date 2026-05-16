@@ -1073,13 +1073,27 @@ async function init(): Promise<void> {
   function renderOptionsMenu(): void {
     optionsMenu.innerHTML = `
       <div class="md-reader__options-title">Options</div>
-      <label class="md-reader__options-row">
-        <span>
-          <strong>Hide dotfiles</strong>
-          <small>Hide files and folders starting with a dot.</small>
-        </span>
-        <input type="checkbox" data-option="hideDotFiles" />
-      </label>
+      <div class="md-reader__options-group">
+        <div class="md-reader__options-slider-head">
+          <div class="md-reader__options-label">Font size</div>
+          <output data-font-size-output></output>
+        </div>
+        <input
+          class="md-reader__options-slider"
+          type="range"
+          min="0"
+          max="${Object.keys(FONT_SIZE_MAP).length - 1}"
+          step="1"
+          data-option="fontSize"
+        />
+      </div>
+      <div class="md-reader__options-group">
+        <div class="md-reader__options-label">Alignment</div>
+        <div class="md-reader__side-switch-control" data-align-switch>
+          <button type="button" data-align="left">Left</button>
+          <button type="button" data-align="center">Center</button>
+        </div>
+      </div>
       <div class="md-reader__options-group">
         <div class="md-reader__options-label">Appearance</div>
         <div class="md-reader__options-theme">
@@ -1103,27 +1117,6 @@ async function init(): Promise<void> {
         </div>
       </div>
       <div class="md-reader__options-group">
-        <div class="md-reader__options-slider-head">
-          <div class="md-reader__options-label">Font size</div>
-          <output data-font-size-output></output>
-        </div>
-        <input
-          class="md-reader__options-slider"
-          type="range"
-          min="0"
-          max="${Object.keys(FONT_SIZE_MAP).length - 1}"
-          step="1"
-          data-option="fontSize"
-        />
-      </div>
-      <div class="md-reader__options-group">
-        <div class="md-reader__options-label">Alignment</div>
-        <div class="md-reader__side-switch-control" data-align-switch>
-          <button type="button" data-align="left">Left</button>
-          <button type="button" data-align="center">Center</button>
-        </div>
-      </div>
-      <div class="md-reader__options-group">
         <div class="md-reader__options-label">Content width</div>
         <div class="md-reader__side-switch-control" data-width-mode-switch>
           <button type="button" data-width-mode="auto">Auto</button>
@@ -1142,6 +1135,13 @@ async function init(): Promise<void> {
           data-option="contentWidth"
         />
       </div>
+      <label class="md-reader__options-row">
+        <span>
+          <strong>Hide dotfiles</strong>
+          <small>Hide files and folders starting with a dot.</small>
+        </span>
+        <input type="checkbox" data-option="hideDotFiles" />
+      </label>
     `
 
     const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')

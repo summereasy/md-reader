@@ -65,16 +65,34 @@ const CN = {
   RAW_CONTENT: `${PREFIX}raw-content`,
 }
 
-const ICONS = {
-  code: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4l-6 8 6 8"/><path d="M16 4l6 8-6 8"/><line x1="13" y1="3" x2="11" y2="21" opacity="0.4"/></svg>',
-  side: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5C4 4.67 4.67 4 5.5 4h13c.83 0 1.5.67 1.5 1.5v13c0 .83-.67 1.5-1.5 1.5h-13C4.67 20 4 19.33 4 18.5v-13Z"/><path d="M9 4v16"/></svg>',
-  top: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
-  sun: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
-  moon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
-  auto: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>',
-  alignCenter: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
-  alignLeft: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+// --- Lucide icons ----------------------------------------------------------
+import { createElement as lucideIcon } from 'lucide'
+import {
+  Code2, PanelLeft, ArrowUp, Sun, Moon, Monitor,
+  AlignCenter, AlignLeft, Settings, Search,
+} from 'lucide'
+
+function iconSvg(iconDef: unknown): string {
+  const attrs = `viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`
+  const inner = (iconDef as [string, Record<string, string>][])
+    .map(([tag, a]) => `<${tag}${Object.entries(a).map(([k, v]) => ` ${k}="${v}"`).join('')}/>`)
+    .join('')
+  return `<svg ${attrs}>${inner}</svg>`
 }
+
+const ICONS = {
+  code: iconSvg(Code2),
+  side: iconSvg(PanelLeft),
+  top: iconSvg(ArrowUp),
+  sun: iconSvg(Sun),
+  moon: iconSvg(Moon),
+  auto: iconSvg(Monitor),
+  alignCenter: iconSvg(AlignCenter),
+  alignLeft: iconSvg(AlignLeft),
+  settings: iconSvg(Settings),
+  search: iconSvg(Search),
+}
+// ---------------------------------------------------------------------------
 
 // Register plugins
 blockCopyPlugin()
@@ -475,7 +493,7 @@ async function init(): Promise<void> {
   const optionsBtn = document.createElement('button')
   optionsBtn.className = `${CN.BTN} md-reader__btn--options`
   optionsBtn.title = 'Options'
-  optionsBtn.innerHTML = '<span></span><span></span><span></span>'
+  optionsBtn.innerHTML = ICONS.settings
   optionsBtn.addEventListener('click', (e) => {
     e.stopPropagation()
     optionsMenu.classList.toggle('opened')
@@ -736,7 +754,7 @@ async function init(): Promise<void> {
     searchBtn.type = 'button'
     searchBtn.className = 'md-reader__side-search-btn'
     searchBtn.title = 'Filter'
-    searchBtn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    searchBtn.innerHTML = ICONS.search
 
     searchWrap.className = 'md-reader__side-search-wrap'
     searchWrap.innerHTML = ''

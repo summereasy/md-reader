@@ -490,6 +490,11 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
   color: var(--mdr-link-hover);
 }
 
+.md-reader__side li.md-reader__side-li--active > .md-reader__toc-row {
+  background: var(--mdr-primary-soft);
+  border-radius: 6px;
+}
+
 .md-reader__side li.md-reader__side-li--active > .md-reader__toc-row a {
   color: var(--mdr-link);
   font-weight: bolder;

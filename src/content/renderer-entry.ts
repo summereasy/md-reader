@@ -222,6 +222,10 @@ function renderTocItem(item: TocItem): void {
   link.title = item.text
   link.href = `#${item.encoded}`
   link.textContent = item.text
+  link.addEventListener('click', (e) => {
+    e.preventDefault()
+    item.head.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
   row.append(toggle, link)
   item.li.appendChild(row)
 

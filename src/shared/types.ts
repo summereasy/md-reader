@@ -33,7 +33,7 @@ export const DARK_THEMES: { value: DarkTheme; label: string }[] = [
 
 export type CodeTheme = 'auto' | 'light' | 'dark'
 
-export type FontSize = 'Extreme Small' | 'Very Small' | 'Small' | 'Medium' | 'Large' | 'Extreme Large'
+export type FontSize = 'Extreme Small' | 'Very Small' | 'Small' | 'Medium' | 'Large' | 'Very Large' | 'Extreme Large'
 
 export const FONT_SIZE_MAP: Record<FontSize, number> = {
   'Extreme Small': 12,
@@ -41,7 +41,8 @@ export const FONT_SIZE_MAP: Record<FontSize, number> = {
   'Small': 16,
   'Medium': 18,
   'Large': 20,
-  'Extreme Large': 24,
+  'Very Large': 24,
+  'Extreme Large': 28,
 }
 
 export interface StorageData {

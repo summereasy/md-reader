@@ -1209,10 +1209,15 @@ async function init(): Promise<void> {
     optionsMenu.querySelectorAll<HTMLButtonElement>('[data-color-mode]').forEach((button) => {
       button.classList.toggle('active', button.dataset.colorMode === (data.colorMode ?? 'light'))
     })
+    const lightVariantRow = optionsMenu.querySelector<HTMLElement>('[data-theme-variant="light"]')?.closest<HTMLElement>('.md-reader__options-variant-row')
+    const darkVariantRow = optionsMenu.querySelector<HTMLElement>('[data-theme-variant="dark"]')?.closest<HTMLElement>('.md-reader__options-variant-row')
     const lightSelect = optionsMenu.querySelector<HTMLSelectElement>('[data-theme-variant="light"]')
     if (lightSelect) lightSelect.value = data.lightTheme ?? 'default'
     const darkSelect = optionsMenu.querySelector<HTMLSelectElement>('[data-theme-variant="dark"]')
     if (darkSelect) darkSelect.value = data.darkTheme ?? 'default'
+    const mode = data.colorMode ?? 'auto'
+    if (lightVariantRow) lightVariantRow.style.display = (mode === 'light' || mode === 'auto') ? '' : 'none'
+    if (darkVariantRow) darkVariantRow.style.display = (mode === 'dark' || mode === 'auto') ? '' : 'none'
     const fontSizes = Object.keys(FONT_SIZE_MAP) as FontSize[]
     const fontSize = data.fontSize || 'Small'
     const fontSlider = optionsMenu.querySelector<HTMLInputElement>('[data-option="fontSize"]')

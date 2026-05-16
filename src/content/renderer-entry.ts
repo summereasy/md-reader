@@ -1117,6 +1117,13 @@ async function init(): Promise<void> {
         />
       </div>
       <div class="md-reader__options-group">
+        <div class="md-reader__options-label">Alignment</div>
+        <div class="md-reader__side-switch-control" data-align-switch>
+          <button type="button" data-align="left">Left</button>
+          <button type="button" data-align="center">Center</button>
+        </div>
+      </div>
+      <div class="md-reader__options-group">
         <div class="md-reader__options-label">Content width</div>
         <div class="md-reader__side-switch-control" data-width-mode-switch>
           <button type="button" data-width-mode="auto">Auto</button>
@@ -1161,6 +1168,17 @@ async function init(): Promise<void> {
       saveConfig('fontSize', getFontSizeAtIndex(Number(fontSlider.value)))
     })
 
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-align]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const centered = button.dataset.align === 'center'
+        data.centered = centered
+        saveConfig('centered', centered)
+        animateCenterToggle(centered)
+        updateQuickButtons()
+        updateOptionsMenuState()
+      })
+    })
+
     optionsMenu.querySelectorAll<HTMLButtonElement>('[data-width-mode]').forEach((button) => {
       button.addEventListener('click', () => {
         const mode = button.dataset.widthMode as ContentWidthMode
@@ -1203,6 +1221,9 @@ async function init(): Promise<void> {
     if (fontSizeOutput) fontSizeOutput.value = fontSize
 
     const widthMode = data.contentWidthMode ?? 'auto'
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-align]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.align === (data.centered ? 'center' : 'left'))
+    })
     optionsMenu.querySelectorAll<HTMLButtonElement>('[data-width-mode]').forEach((button) => {
       button.classList.toggle('active', button.dataset.widthMode === widthMode)
     })

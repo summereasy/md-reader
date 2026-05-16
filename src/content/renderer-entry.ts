@@ -66,9 +66,14 @@ const CN = {
 }
 
 const ICONS = {
-  code: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+  code: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4l-6 8 6 8"/><path d="M16 4l6 8-6 8"/><line x1="13" y1="3" x2="11" y2="21" opacity="0.4"/></svg>',
   side: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5C4 4.67 4.67 4 5.5 4h13c.83 0 1.5.67 1.5 1.5v13c0 .83-.67 1.5-1.5 1.5h-13C4.67 20 4 19.33 4 18.5v-13Z"/><path d="M9 4v16"/></svg>',
   top: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
+  auto: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>',
+  alignCenter: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
+  alignLeft: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>',
 }
 
 // Register plugins
@@ -380,6 +385,37 @@ async function init(): Promise<void> {
     rawBtn.setAttribute('aria-pressed', String(showRaw))
   })
 
+  const themeBtn = document.createElement('button')
+  themeBtn.className = `${CN.BTN} md-reader__btn--theme`
+  themeBtn.title = 'Theme: auto'
+  themeBtn.innerHTML = ICONS.auto
+  themeBtn.addEventListener('click', () => {
+    const modes: ColorMode[] = ['auto', 'light', 'dark']
+    const current = data.colorMode ?? 'auto'
+    const next = modes[(modes.indexOf(current) + 1) % modes.length]
+    saveConfig('colorMode', next)
+  })
+
+  const alignBtn = document.createElement('button')
+  alignBtn.className = `${CN.BTN} md-reader__btn--align`
+  alignBtn.title = 'Toggle centered'
+  alignBtn.innerHTML = ICONS.alignCenter
+  alignBtn.addEventListener('click', () => {
+    const centered = !mdContent.classList.contains(CN.CENTERED)
+    mdContent.classList.toggle(CN.CENTERED, centered)
+    saveConfig('centered', centered)
+  })
+
+  function updateQuickButtons(): void {
+    const mode = data.colorMode ?? 'auto'
+    themeBtn.innerHTML = mode === 'dark' ? ICONS.moon : mode === 'light' ? ICONS.sun : ICONS.auto
+    themeBtn.title = `Theme: ${mode}`
+    const centered = mdContent.classList.contains(CN.CENTERED)
+    alignBtn.innerHTML = centered ? ICONS.alignCenter : ICONS.alignLeft
+    alignBtn.title = centered ? 'Centered' : 'Left aligned'
+  }
+  updateQuickButtons()
+
   const topBtn = document.createElement('button')
   topBtn.className = `${CN.BTN} ${CN.BTN_GO_TOP}`
   topBtn.title = 'Go to top'
@@ -403,9 +439,11 @@ async function init(): Promise<void> {
   document.addEventListener('click', () => optionsMenu.classList.remove('opened'))
 
   btnWrap.appendChild(sideBtn)
-  btnWrap.appendChild(rawBtn)
+  btnWrap.appendChild(themeBtn)
+  btnWrap.appendChild(alignBtn)
   btnWrap.appendChild(optionsBtn)
   btnWrap.appendChild(optionsMenu)
+  btnWrap.appendChild(rawBtn)
   btnWrap.appendChild(topBtn)
 
   // Mount
@@ -505,6 +543,7 @@ async function init(): Promise<void> {
           renderToc()
         }
         updateOptionsMenuState()
+        updateQuickButtons()
         break
       }
       case 'updateFileTreeOptions': if (fileTreeRootURL) renderFileTree(fileTreeRootURL); updateOptionsMenuState(); break
@@ -514,7 +553,7 @@ async function init(): Promise<void> {
         updateOptionsMenuState()
         break
       case 'toggleRefresh': clearTimeout(pollTimer); if (value) window.location.reload(); break
-      case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); break
+      case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); updateQuickButtons(); break
       case 'toggleSide': {
         if (window.innerWidth <= 960) {
           const expanded = BODY.classList.toggle(CN.SIDE_EXPANDED)

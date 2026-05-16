@@ -1335,6 +1335,16 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
   gap: 3px;
 }
 
+.md-reader__btn--align {
+  position: absolute;
+  right: 96px;
+}
+
+.md-reader__btn--theme {
+  position: absolute;
+  right: 136px;
+}
+
 .md-reader__btn--options span {
   width: 4px;
   height: 4px;

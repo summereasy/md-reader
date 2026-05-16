@@ -446,9 +446,8 @@ async function init(): Promise<void> {
   alignBtn.addEventListener('click', () => {
     const centered = !data.centered
     data.centered = centered
-    mdContent.classList.toggle(CN.CENTERED, centered)
     saveConfig('centered', centered)
-    applyContentWidth()
+    animateCenterToggle(centered)
     updateQuickButtons()
   })
 
@@ -604,7 +603,7 @@ async function init(): Promise<void> {
         updateOptionsMenuState()
         break
       case 'toggleRefresh': clearTimeout(pollTimer); if (value) window.location.reload(); break
-      case 'toggleCentered': mdContent.classList.toggle(CN.CENTERED, !!value); updateQuickButtons(); applyContentWidth(); break
+      case 'toggleCentered': data.centered = !!value; animateCenterToggle(!!value); updateQuickButtons(); break
       case 'updateContentWidthMode':
       case 'updateContentWidthPercent': applyContentWidth(); updateOptionsMenuState(); break
       case 'toggleSide': {
@@ -1216,6 +1215,34 @@ async function init(): Promise<void> {
       mdContent.style.marginLeft = data.centered ? 'auto' : '0'
       mdContent.style.marginRight = 'auto'
     }
+  }
+
+  let centerAnim: Animation | undefined
+
+  /** Animate position change when toggling center/left alignment. */
+  function animateCenterToggle(targetCentered: boolean): void {
+    centerAnim?.cancel()
+    // 1. Record current visual position
+    const beforeLeft = mdContent.getBoundingClientRect().left
+    // 2. Apply the actual layout change
+    applyContentWidth()
+    // 3. Record new position
+    const afterLeft = mdContent.getBoundingClientRect().left
+    const delta = beforeLeft - afterLeft
+    if (Math.abs(delta) < 1) return
+    // 4. Shift back to old position via transform, then animate to 0
+    mdContent.style.transform = `translateX(${delta}px)`
+    // Force reflow so the starting transform is applied
+    mdContent.getBoundingClientRect()
+    mdContent.style.transition = 'transform 0.25s ease-out'
+    mdContent.style.transform = 'translateX(0)'
+    const cleanup = () => {
+      mdContent.style.removeProperty('transform')
+      mdContent.style.removeProperty('transition')
+    }
+    mdContent.addEventListener('transitionend', cleanup, { once: true })
+    // Fallback in case transitionend doesn't fire
+    setTimeout(cleanup, 300)
   }
 
   function saveConfig<K extends keyof StorageData>(key: K, value: StorageData[K]): void {

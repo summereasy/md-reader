@@ -1073,6 +1073,13 @@ async function init(): Promise<void> {
   function renderOptionsMenu(): void {
     optionsMenu.innerHTML = `
       <div class="md-reader__options-title">Options</div>
+      <label class="md-reader__options-row">
+        <span>
+          <strong>Hide dotfiles</strong>
+          <small>Hide files and folders starting with a dot.</small>
+        </span>
+        <input type="checkbox" data-option="hideDotFiles" />
+      </label>
       <div class="md-reader__options-group">
         <div class="md-reader__options-slider-head">
           <div class="md-reader__options-label">Font size</div>
@@ -1135,13 +1142,6 @@ async function init(): Promise<void> {
           data-option="contentWidth"
         />
       </div>
-      <label class="md-reader__options-row">
-        <span>
-          <strong>Hide dotfiles</strong>
-          <small>Hide files and folders starting with a dot.</small>
-        </span>
-        <input type="checkbox" data-option="hideDotFiles" />
-      </label>
     `
 
     const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')

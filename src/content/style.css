@@ -539,9 +539,8 @@ body.md-reader .md-reader__markdown-content .katex-display::-webkit-scrollbar-th
 }
 
 .md-reader__side-switch-control button.active {
-  background: var(--mdr-bg);
-  box-shadow: 0 8px 22px var(--mdr-elevated-shadow-soft),
-    inset 0 0 0 1px var(--mdr-hover-bg);
+  background: var(--mdr-primary-soft);
+  box-shadow: none;
 }
 
 .md-reader__side-switch-control button:disabled {

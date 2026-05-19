@@ -402,6 +402,40 @@ async function init(): Promise<void> {
   mdBody.className = CN.BODY
   mdBody.append(mdContent, rawContent)
 
+  function getNextSidebarHiddenValue(): boolean {
+    return window.innerWidth <= 960
+      ? !BODY.classList.contains(CN.SIDE_EXPANDED)
+      : !BODY.classList.contains(CN.SIDE_COLLAPSED)
+  }
+
+  function toggleSidebar(): void {
+    if (window.innerWidth <= 960) {
+      const expanded = BODY.classList.toggle(CN.SIDE_EXPANDED)
+      if (expanded) {
+        const close = (e: Event) => {
+          if (e.type === 'keydown' && (e as KeyboardEvent).code !== 'Escape') return
+          BODY.classList.remove(CN.SIDE_EXPANDED)
+          mdBody.removeEventListener('click', close, { capture: true })
+          window.removeEventListener('resize', close)
+          document.removeEventListener('keydown', close)
+        }
+        setTimeout(() => {
+          mdBody.addEventListener('click', close, { capture: true, once: true })
+          window.addEventListener('resize', close, { once: true })
+          document.addEventListener('keydown', close, { once: true })
+        }, 0)
+      }
+    } else {
+      BODY.classList.toggle(CN.SIDE_COLLAPSED)
+    }
+    setTimeout(() => applyContentWidth(), 350)
+  }
+
+  function isEditableTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false
+    return !!target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')
+  }
+
   // Sidebar
   const mdSide = createSidebar()
   const sideResizeHandle = document.createElement('div')
@@ -432,10 +466,7 @@ async function init(): Promise<void> {
   sideBtn.title = 'Toggle sidebar'
   sideBtn.innerHTML = ICONS.side
   sideBtn.addEventListener('click', () => {
-    const value = window.innerWidth <= 960
-      ? !BODY.classList.contains(CN.SIDE_EXPANDED)
-      : !BODY.classList.contains(CN.SIDE_COLLAPSED)
-    chrome.runtime.sendMessage({ action: 'storage', data: { key: 'hiddenSide', value } })
+    saveConfig('hiddenSide', getNextSidebarHiddenValue())
   })
 
   const rawBtn = document.createElement('button')
@@ -554,6 +585,15 @@ async function init(): Promise<void> {
     }
   }, 100))
 
+  document.addEventListener('keydown', (event) => {
+    if (isEditableTarget(event.target)) return
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'b') return
+
+    event.preventDefault()
+    event.stopPropagation()
+    saveConfig('hiddenSide', getNextSidebarHiddenValue())
+  }, true)
+
   // Dark mode media query
   darkMQL.addEventListener('change', (e) => {
     if (data.colorMode === 'auto') {
@@ -628,29 +668,7 @@ async function init(): Promise<void> {
       case 'toggleCentered': data.centered = !!value; animateCenterToggle(!!value); updateQuickButtons(); break
       case 'updateContentWidthMode':
       case 'updateContentWidthPercent': applyContentWidth(); updateOptionsMenuState(); break
-      case 'toggleSide': {
-        if (window.innerWidth <= 960) {
-          const expanded = BODY.classList.toggle(CN.SIDE_EXPANDED)
-          if (expanded) {
-            const close = (e: Event) => {
-              if (e.type === 'keydown' && (e as KeyboardEvent).code !== 'Escape') return
-              BODY.classList.remove(CN.SIDE_EXPANDED)
-              mdBody.removeEventListener('click', close, { capture: true })
-              window.removeEventListener('resize', close)
-              document.removeEventListener('keydown', close)
-            }
-            setTimeout(() => {
-              mdBody.addEventListener('click', close, { capture: true, once: true })
-              window.addEventListener('resize', close, { once: true })
-              document.addEventListener('keydown', close, { once: true })
-            }, 0)
-          }
-        } else {
-          BODY.classList.toggle(CN.SIDE_COLLAPSED)
-        }
-        setTimeout(() => applyContentWidth(), 350)
-        break
-      }
+      case 'toggleSide': toggleSidebar(); break
     }
   })
 

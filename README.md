@@ -52,7 +52,7 @@ Then load `dist/` as an unpacked extension.
 
 | Shortcut | Action |
 | --- | --- |
-| `Alt+Shift+B` | Toggle sidebar |
+| `⌘B` / `Ctrl+B` | Toggle sidebar on rendered Markdown pages |
 | `Alt+Shift+C` | Toggle centered layout |
 | `Alt+Shift+R` | Toggle auto refresh |
 | `Alt+Shift+T` | Toggle theme |

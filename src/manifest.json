@@ -95,13 +95,6 @@
     }
   ],
   "commands": {
-    "toggleSide": {
-      "description": "__MSG_command_toggle_side__",
-      "suggested_key": {
-        "default": "Alt+Shift+B",
-        "mac": "Command+B"
-      }
-    },
     "toggleCentered": {
       "description": "__MSG_command_toggle_centered__",
       "suggested_key": {

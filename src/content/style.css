@@ -2079,13 +2079,75 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
   opacity: 1;
 }
 
-/* Task lists */
+/* Task lists — flex on the <li> itself (tight lists have no <p> wrapper) */
 .md-reader__markdown-content .task-list-item {
   list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
 }
 
 .md-reader__markdown-content .task-list-item input {
   margin-right: 0.5em;
+}
+
+/* Loose list: undo <p> margin when present */
+.md-reader__markdown-content .task-list-item > p {
+  margin: 0;
+}
+
+.mdr-cbx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mdr-cbx svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* Scope text — keep line-height matching surrounding text */
+.mdr-cbx-scope {
+  line-height: 1.5;
+}
+
+/* unchecked: Square */
+.mdr-cbx--unchecked {
+  color: var(--mdr-text-secondary);
+}
+
+/* checked: CircleCheckBig */
+.mdr-cbx--checked {
+  color: var(--mdr-green);
+}
+
+/* deleted: Trash2 */
+.mdr-cbx--deleted {
+  color: var(--mdr-red);
+}
+
+/* important: AlertTriangle */
+.mdr-cbx--important {
+  color: var(--mdr-orange);
+}
+
+/* Scope: whole-line text effects */
+.mdr-cbx-scope--checked {
+  color: var(--mdr-text-secondary);
+  opacity: 0.7;
+}
+
+.mdr-cbx-scope--deleted {
+  color: var(--mdr-red);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.mdr-cbx-scope--important {
+  color: var(--mdr-orange);
+  font-weight: 500;
 }
 
 /* Katex */

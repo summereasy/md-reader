@@ -12,6 +12,7 @@ export const MD_PLUGINS = [
   'Deflist',
   'Footnote',
   'TaskLists',
+  'CustomCheckbox',
   'Alert',
 ] as const
 

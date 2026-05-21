@@ -13,6 +13,7 @@ import mTaskLists from 'markdown-it-task-lists'
 import mToc from 'markdown-it-table-of-contents'
 import mKatex from '@traptitech/markdown-it-katex'
 import mAlert from './plugins/alert'
+import mCustomCheckbox from './plugins/custom-checkbox'
 import mMultimdTable from 'markdown-it-multimd-table'
 function escapeHtml(str: string): string {
   return str
@@ -67,6 +68,7 @@ const PLUGINS: Record<string, any[] | PluginFactory> = {
   Deflist: [mDeflist],
   Footnote: [mFootnote],
   TaskLists: [mTaskLists],
+  CustomCheckbox: [mCustomCheckbox],
   TOC: [mToc],
   Alert: [mAlert],
 }
@@ -106,8 +108,19 @@ function initMarkdownIt({ config = {}, plugins = [...MD_PLUGINS], theme = 'light
   // Builtin multimd table
   md.use(mMultimdTable)
 
+  // CustomCheckbox and TaskLists are mutually exclusive:
+  // If CustomCheckbox is enabled, skip TaskLists (and vice versa).
+  const effectivePlugins = [...plugins]
+  const hasCustom = effectivePlugins.includes('CustomCheckbox')
+  const hasTask = effectivePlugins.includes('TaskLists')
+  if (hasCustom && hasTask) {
+    // CustomCheckbox takes priority — remove TaskLists
+    const idx = effectivePlugins.indexOf('TaskLists')
+    effectivePlugins.splice(idx, 1)
+  }
+
   // Custom plugins
-  for (const name of plugins) {
+  for (const name of effectivePlugins) {
     let plugin = PLUGINS[name]
     if (!plugin) continue
     if (typeof plugin === 'function') {

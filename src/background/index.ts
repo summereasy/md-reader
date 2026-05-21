@@ -47,6 +47,7 @@ const actionMap: Record<string, string> = {
   fontSize: 'updateFontSize',
   hiddenSide: 'toggleSide',
   hideDotFiles: 'updateFileTreeOptions',
+  clickableTodoList: 'updateClickableTodoList',
   contentWidthMode: 'updateContentWidthMode',
   contentWidthPercent: 'updateContentWidthPercent',
 }

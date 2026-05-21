@@ -14,7 +14,7 @@ import type MarkdownIt from 'markdown-it'
 import type StateCore from 'markdown-it/lib/rules_core/state_core.mjs'
 import type Token from 'markdown-it/lib/token.mjs'
 
-type CheckboxKind = 'unchecked' | 'checked' | 'deleted' | 'important'
+export type CheckboxKind = 'unchecked' | 'checked' | 'deleted' | 'important'
 
 const CHECKBOX_MAP: Record<string, CheckboxKind> = {
   '[ ]': 'unchecked',
@@ -29,7 +29,7 @@ function lucide(inner: string): string {
   return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`
 }
 
-const ICONS: Record<CheckboxKind, string> = {
+export const CHECKBOX_ICONS: Record<CheckboxKind, string> = {
   // Square (unchecked)
   unchecked: lucide('<rect width="18" height="18" x="3" y="3" rx="2"/>'),
   // CircleCheckBig (checked)
@@ -102,7 +102,7 @@ export default function customCheckboxPlugin(md: MarkdownIt) {
 
       // Insert checkbox icon token before the remaining content
       const iconToken = new state.Token('html_inline', '', 0)
-      iconToken.content = `<span class="mdr-cbx mdr-cbx--${kind}">${ICONS[kind]}</span>`
+      iconToken.content = `<span class="mdr-cbx mdr-cbx--${kind}" data-mdr-cbx="${kind}" role="checkbox" aria-checked="${kind === 'unchecked' ? 'false' : 'true'}" tabindex="0">${CHECKBOX_ICONS[kind]}</span>`
       inline.children!.unshift(iconToken)
 
       // Wrap remaining children in a scope span

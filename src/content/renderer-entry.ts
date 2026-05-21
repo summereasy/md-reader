@@ -5,6 +5,7 @@ import { mdRender, mermaidBlocks } from './renderer'
 import { FONT_SIZE_MAP, LIGHT_THEMES, DARK_THEMES, getDefaultData } from '@/shared/types'
 import type { FontSize, StorageData, ColorMode, LightTheme, DarkTheme, ContentWidthMode } from '@/shared/types'
 import { getEventBus } from './plugins/event'
+import { CHECKBOX_ICONS } from './plugins/custom-checkbox'
 import blockCopyPlugin from './plugins/block-copy'
 import imgViewerPlugin from './plugins/img-viewer'
 import {
@@ -394,8 +395,29 @@ async function init(): Promise<void> {
   rawContent.hidden = true
 
   mdContent.addEventListener('click', (e) => {
+    // Handle checkbox toggle before general click event
+    const cbxTarget = (e.target as HTMLElement).closest('.mdr-cbx') as HTMLElement | null
+    if (cbxTarget) {
+      e.preventDefault()
+      e.stopPropagation()
+      handleCheckboxClick(cbxTarget)
+      return
+    }
     eventBus.emit('click', e.target, e)
   })
+
+  // Toast container
+  const toastWrap = document.createElement('div')
+  toastWrap.className = 'mdr-toast-wrap'
+  let toastTimer: ReturnType<typeof setTimeout> | null = null
+  function showToast(msg: string, type: 'error' | 'info' = 'error'): void {
+    toastWrap.textContent = msg
+    toastWrap.className = `mdr-toast-wrap mdr-toast-wrap--${type} mdr-toast-wrap--visible`
+    if (toastTimer) clearTimeout(toastTimer)
+    toastTimer = setTimeout(() => {
+      toastWrap.classList.remove('mdr-toast-wrap--visible')
+    }, 4000)
+  }
 
   // Main body
   const mdBody = document.createElement('main')
@@ -548,6 +570,7 @@ async function init(): Promise<void> {
   BODY.appendChild(btnWrap)
   BODY.appendChild(mdBody)
   BODY.appendChild(mdSide)
+  BODY.appendChild(toastWrap)
   initSideResize()
 
   // Scroll handler
@@ -659,6 +682,7 @@ async function init(): Promise<void> {
         break
       }
       case 'updateFileTreeOptions': if (fileTreeRootURL) renderFileTree(fileTreeRootURL); updateOptionsMenuState(); break
+      case 'updateClickableTodoList': updateOptionsMenuState(); applyClickableTodoClass(); break
       case 'updateCodeTheme': renderMarkdown(currentRaw); renderToc(); break
       case 'updateFontSize':
         setContentFontSize(value as FontSize)
@@ -693,6 +717,9 @@ async function init(): Promise<void> {
   applyContentWidth()
   if (queryFileURL) {
     await openMarkdownFile(queryFileURL, { updateHistory: false })
+  } else {
+    // Direct file open — check authorization
+    await syncTodoAuthState()
   }
   removeSplash()
 
@@ -702,6 +729,257 @@ async function init(): Promise<void> {
       plugins: data.mdPlugins,
     })
     void renderMermaidDiagrams(mdContent, resolveTheme(data))
+  }
+
+  // --- Checkbox toggle logic (DOM-direct, no re-render) ---
+  const NEXT_STATE: Record<string, string> = {
+    unchecked: 'checked',
+    checked: 'important',
+    important: 'deleted',
+    deleted: 'unchecked',
+  }
+  const STATE_TO_MARKER: Record<string, string> = {
+    unchecked: '[ ]',
+    checked: '[x]',
+    deleted: '[-]',
+    important: '[!]',
+  }
+  const MARKER_TO_STATE: Record<string, string> = {
+    '[ ]': 'unchecked',
+    '[x]': 'checked',
+    '[X]': 'checked',
+    '[-]': 'deleted',
+    '[!]': 'important',
+  }
+
+  // Re-use the same SVG icons from custom-checkbox plugin
+  const CBX_ICONS: Record<string, string> = CHECKBOX_ICONS
+
+  function applyClickableTodoClass(): void {
+    mdContent.classList.toggle('mdr-clickable-todo', !!data.clickableTodoList)
+  }
+
+  async function syncTodoAuthState(): Promise<void> {
+    const isLocal = currentFileURL?.startsWith('file://') ?? false
+    if (!isLocal) {
+      data.clickableTodoList = false
+    }
+    // For file:// URLs, always respect the storage value.
+    // Permission is checked lazily when the user actually clicks a checkbox.
+    applyClickableTodoClass()
+    updateOptionsMenuState()
+  }
+
+  function handleCheckboxClick(cbxEl: HTMLElement): void {
+    if (!data.clickableTodoList) return
+    const cur = cbxEl.getAttribute('data-mdr-cbx')
+    if (!cur) return
+    const next = NEXT_STATE[cur] || 'checked'
+
+    // 1. Update the checkbox icon DOM directly
+    cbxEl.className = `mdr-cbx mdr-cbx--${next}`
+    cbxEl.setAttribute('data-mdr-cbx', next)
+    cbxEl.setAttribute('aria-checked', next === 'unchecked' ? 'false' : 'true')
+    cbxEl.innerHTML = CBX_ICONS[next]
+
+    // 2. Update the scope span
+    const inlineParent = cbxEl.parentElement
+    if (inlineParent) {
+      const scopeSpan = inlineParent.querySelector(':scope > .mdr-cbx-scope')
+      if (scopeSpan) {
+        scopeSpan.className = `mdr-cbx-scope mdr-cbx-scope--${next}`
+      }
+    }
+
+    // 3. Update currentRaw — find the nth checkbox marker
+    const listItem = cbxEl.closest('li')
+    if (!listItem) return
+    const list = listItem.parentElement
+    if (!list) return
+    const siblings = Array.from(list.children).filter(c => c.tagName === 'LI')
+    const itemIndex = siblings.indexOf(listItem)
+    if (itemIndex < 0) return
+
+    const taskItemRegex = /^(\s*(-|\*|\d+\.)\s*)\[([ xX\-!])](?=\s)/gm
+    let match: RegExpExecArray | null
+    let targetMatch: RegExpExecArray | null = null
+    let count = 0
+    while ((match = taskItemRegex.exec(currentRaw)) !== null) {
+      if (count === itemIndex) { targetMatch = match; break }
+      count++
+    }
+    if (!targetMatch) return
+
+    const markerPos = targetMatch.index + targetMatch[1].length
+    const nextMarker = STATE_TO_MARKER[next]
+    currentRaw = currentRaw.substring(0, markerPos) + nextMarker + currentRaw.substring(markerPos + 3)
+    renderRaw(currentRaw)
+    if (rawPre) rawPre.textContent = currentRaw
+
+    // 4. Silent write-back
+    void writeMarkdownFile(currentFileURL, currentRaw)
+  }
+
+  // --- Directory-level file write via File System Access API ---
+  const IDB_NAME = 'md-reader'
+  const IDB_VERSION = 1
+  const IDB_STORE = 'handles'
+  const IDB_DIR_KEY = 'lastDirectory'
+
+  function openIDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_NAME, IDB_VERSION)
+      req.onupgradeneeded = () => {
+        const db = req.result
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE)
+      }
+      req.onsuccess = () => resolve(req.result)
+      req.onerror = () => reject(req.error)
+    })
+  }
+
+  async function persistDirHandle(dir: FileSystemDirectoryHandle): Promise<void> {
+    const db = await openIDB()
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite')
+      tx.objectStore(IDB_STORE).put(dir, IDB_DIR_KEY)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+  }
+
+  async function loadDirHandle(): Promise<FileSystemDirectoryHandle | null> {
+    const db = await openIDB()
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readonly')
+      const r = tx.objectStore(IDB_STORE).get(IDB_DIR_KEY)
+      r.onsuccess = () => resolve(r.result ?? null)
+      r.onerror = () => reject(r.error)
+    })
+  }
+
+  let cachedDirHandle: FileSystemDirectoryHandle | null = null
+
+  async function checkFolderAuthorization(url: string): Promise<boolean> {
+    if (!url.startsWith('file://')) return false
+    try {
+      let dir = cachedDirHandle ?? await loadDirHandle()
+      if (!dir) return false
+      const perm = await (dir as any).queryPermission({ mode: 'readwrite' })
+      if (perm !== 'granted') return false
+      // Verify the file exists under this directory
+      const filePath = decodeURIComponent(new URL(url).pathname)
+      const fh = await navigateToFile(dir, filePath)
+      return !!fh
+    } catch {
+      return false
+    }
+  }
+
+  async function authorizeTodoFolder(currentUrl: string): Promise<boolean> {
+    if (!('showDirectoryPicker' in window)) {
+      showToast('File System Access API not supported in this browser', 'error')
+      return false
+    }
+    // First check if already authorized
+    const already = await checkFolderAuthorization(currentUrl)
+    if (already) return true
+    // Not authorized — show picker
+    try {
+      const dir = await (window as any).showDirectoryPicker({ mode: 'readwrite' })
+      cachedDirHandle = dir
+      await persistDirHandle(dir)
+      // Verify the current file is in this directory
+      const filePath = decodeURIComponent(new URL(currentUrl).pathname)
+      const fh = await navigateToFile(dir, filePath)
+      if (!fh) {
+        showToast('Current file not found in the selected folder. Please try again.', 'error')
+        return false
+      }
+      showToast('Folder authorized successfully', 'info')
+      return true
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return false
+      showToast(`Authorization failed: ${err?.message || err}`, 'error')
+      return false
+    }
+  }
+
+  async function navigateToFile(dir: FileSystemDirectoryHandle, absolutePath: string): Promise<FileSystemFileHandle | null> {
+    const parts = absolutePath.split('/').filter(Boolean)
+    const fileName = parts[parts.length - 1]
+    // Try progressively shorter prefixes: the file may be nested or directly in dir
+    for (let skip = 0; skip <= parts.length - 1; skip++) {
+      try {
+        let current: FileSystemDirectoryHandle = dir
+        for (let i = skip; i < parts.length - 1; i++) {
+          current = await current.getDirectoryHandle(parts[i])
+        }
+        return await current.getFileHandle(fileName)
+      } catch {
+        continue
+      }
+    }
+    return null
+  }
+
+  async function resolveFileHandle(url: string): Promise<FileSystemFileHandle | null> {
+    if (!('showDirectoryPicker' in window)) {
+      showToast('Save failed: browser does not support File System Access API', 'error')
+      return null
+    }
+
+    const filePath = decodeURIComponent(new URL(url).pathname)
+    const fileName = filePath.split('/').pop()!
+
+    // 1. Try cached / persisted directory handle
+    let dir = cachedDirHandle ?? await loadDirHandle()
+    if (dir) {
+      try {
+        const perm = await (dir as any).queryPermission({ mode: 'readwrite' })
+        if (perm === 'granted') {
+          const fh = await navigateToFile(dir, filePath)
+          if (fh) { cachedDirHandle = dir; return fh }
+        }
+      } catch { /* expired or revoked */ }
+    }
+
+    // 2. Ask user to pick the containing folder
+    try {
+      dir = await (window as any).showDirectoryPicker({ mode: 'readwrite' })
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return null
+      showToast(`Save failed: ${err?.message || err}`, 'error')
+      return null
+    }
+
+    const fh = await navigateToFile(dir!, filePath)
+    if (!fh) {
+      showToast(`File "${fileName}" not found in the selected folder. Please pick the folder that contains it.`, 'error')
+      return null
+    }
+
+    cachedDirHandle = dir!
+    await persistDirHandle(dir!)
+    return fh
+  }
+
+  async function writeMarkdownFile(url: string, content: string): Promise<void> {
+    if (!url.startsWith('file://')) {
+      showToast('Save failed: remote files cannot be written back', 'error')
+      return
+    }
+    try {
+      const handle = await resolveFileHandle(url)
+      if (!handle) return
+      const writable = await handle.createWritable()
+      await writable.write(content)
+      await writable.close()
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return
+      const msg = err?.message || String(err)
+      showToast(`Save failed: ${msg}. Try refreshing the page.`, 'error')
+    }
   }
 
   function renderRaw(raw: string): void {
@@ -1083,6 +1361,8 @@ async function init(): Promise<void> {
       if (rawPre) rawPre.textContent = raw
       if (options.updateHistory !== false) updateLocationForCurrentFile(url)
       window.scrollTo({ top: 0 })
+      // Auto-detect folder authorization for the new file
+      await syncTodoAuthState()
     } catch (err) {
       console.error('[md-reader] Failed to open markdown file:', err)
     }
@@ -1093,8 +1373,15 @@ async function init(): Promise<void> {
       <div class="md-reader__options-title">Options</div>
       <label class="md-reader__options-row">
         <span>
+          <strong>Click Todo List</strong>
+          <small>ℹ️ Requires folder authorization.</small>
+        </span>
+        <input type="checkbox" data-option="clickableTodoList" />
+      </label>
+      <label class="md-reader__options-row">
+        <span>
           <strong>Hide dotfiles</strong>
-          <small>Hide files and folders starting with a dot.</small>
+          <small>Hide hidden files and folders.</small>
         </span>
         <input type="checkbox" data-option="hideDotFiles" />
       </label>
@@ -1166,6 +1453,19 @@ async function init(): Promise<void> {
     hideDotFiles?.addEventListener('change', () => {
       saveConfig('hideDotFiles', !!hideDotFiles.checked)
     })
+    const clickableTodo = optionsMenu.querySelector<HTMLInputElement>('[data-option="clickableTodoList"]')
+    clickableTodo?.addEventListener('change', async () => {
+      if (clickableTodo.checked) {
+        const ok = await authorizeTodoFolder(currentFileURL)
+        if (!ok) {
+          clickableTodo.checked = false
+          return
+        }
+      }
+      data.clickableTodoList = !!clickableTodo.checked
+      saveConfig('clickableTodoList', !!clickableTodo.checked)
+      applyClickableTodoClass()
+    })
     optionsMenu.querySelectorAll<HTMLButtonElement>('[data-color-mode]').forEach((button) => {
       button.addEventListener('click', () => saveConfig('colorMode', button.dataset.colorMode as ColorMode))
     })
@@ -1222,6 +1522,12 @@ async function init(): Promise<void> {
   }
 
   function updateOptionsMenuState(): void {
+    const clickableTodo = optionsMenu.querySelector<HTMLInputElement>('[data-option="clickableTodoList"]')
+    if (clickableTodo) {
+      const isLocal = currentFileURL?.startsWith('file://') ?? window.location.protocol === 'file:'
+      clickableTodo.checked = !!data.clickableTodoList
+      clickableTodo.disabled = !isLocal
+    }
     const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')
     if (hideDotFiles) hideDotFiles.checked = !!data.hideDotFiles
     optionsMenu.querySelectorAll<HTMLButtonElement>('[data-color-mode]').forEach((button) => {

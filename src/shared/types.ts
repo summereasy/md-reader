@@ -69,6 +69,7 @@ export interface StorageData {
   codeTheme?: CodeTheme
   fontSize?: FontSize
   hideDotFiles?: boolean
+  clickableTodoList?: boolean
   sideWidth?: number
   fileTreeRootURL?: string
   contentWidthMode?: ContentWidthMode
@@ -89,6 +90,7 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     codeTheme: 'auto',
     fontSize: 'Large',
     hideDotFiles: true,
+    clickableTodoList: false,
     sideWidth: 320,
     fileTreeRootURL: undefined,
     contentWidthMode: 'auto',

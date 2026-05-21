@@ -1845,13 +1845,15 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
 }
 
 .md-reader__options-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  position: relative;
+  display: block;
   padding: 12px;
   border-radius: 14px;
   background: var(--mdr-muted-bg);
+}
+
+.md-reader__options-row + .md-reader__options-row {
+  margin-top: 10px;
 }
 
 .md-reader__options-row strong,
@@ -1860,6 +1862,7 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
 }
 
 .md-reader__options-row strong {
+  padding-right: 58px;
   margin-bottom: 3px;
   font-size: 14px;
 }
@@ -1872,7 +1875,9 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
 
 .md-reader__options-row input {
   appearance: none;
-  flex: 0 0 42px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
   width: 42px;
   height: 24px;
   border-radius: 999px;
@@ -2163,6 +2168,50 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
 .mdr-cbx-scope--important {
   color: var(--mdr-orange);
   font-weight: 500;
+}
+
+/* Checkbox: only interactive when clickableTodoList is enabled */
+.mdr-cbx {
+  user-select: none;
+}
+.mdr-clickable-todo .mdr-cbx {
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.mdr-clickable-todo .mdr-cbx:hover {
+  transform: scale(1.2);
+}
+.mdr-clickable-todo .mdr-cbx:active {
+  transform: scale(0.95);
+}
+/* Toast notification */
+.mdr-toast-wrap {
+  position: fixed;
+  bottom: 2em;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 0.5em 1.2em;
+  border-radius: 6px;
+  font-size: 0.85em;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 9999;
+}
+.mdr-toast-wrap--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.mdr-toast-wrap--error {
+  background: var(--mdr-red, #e53e3e);
+  color: #fff;
+}
+.mdr-toast-wrap--info {
+  background: var(--mdr-text-secondary, #718096);
+  color: #fff;
 }
 
 /* Katex */

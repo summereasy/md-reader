@@ -2079,21 +2079,36 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
   opacity: 1;
 }
 
-/* Task lists — flex on the <li> itself (tight lists have no <p> wrapper) */
+/* Task lists */
 .md-reader__markdown-content .task-list-item {
   list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
+  position: relative;
+  display: block;
+  padding-left: 1.55em;
 }
 
-.md-reader__markdown-content .task-list-item input {
-  margin-right: 0.5em;
+.md-reader__markdown-content .task-list-item > .mdr-cbx:first-child,
+.md-reader__markdown-content .task-list-item > p:first-child > .mdr-cbx:first-child,
+.md-reader__markdown-content .task-list-item > input:first-child {
+  position: absolute;
+  top: 0.28em;
+  left: 0;
+  margin: 0;
 }
 
-/* Loose list: undo <p> margin when present */
 .md-reader__markdown-content .task-list-item > p {
   margin: 0;
+}
+
+.md-reader__markdown-content .task-list-item > ul,
+.md-reader__markdown-content .task-list-item > ol {
+  margin-top: 0.35em;
+  margin-bottom: 0.5em;
+  padding-left: 1.25em;
+}
+
+.md-reader__markdown-content .task-list-item > ul.contains-task-list {
+  padding-left: 0;
 }
 
 .mdr-cbx {

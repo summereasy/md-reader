@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
 import { resolve } from 'path'
-import { copyFileSync, cpSync, mkdirSync } from 'fs'
+import { copyFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 
 const ROOT = process.cwd()
 
@@ -18,7 +18,13 @@ export default defineConfig({
         const distDir = resolve(ROOT, 'dist')
         const assetsDist = resolve(distDir, 'assets')
         mkdirSync(assetsDist, { recursive: true })
-        copyFileSync(resolve(srcDir, 'manifest.json'), resolve(distDir, 'manifest.json'))
+        // Inject version from package.json into manifest.json
+        const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf-8'))
+        const manifestSrc = readFileSync(resolve(srcDir, 'manifest.json'), 'utf-8')
+        const manifest = JSON.parse(manifestSrc)
+        manifest.version = pkg.version
+        manifest.version_name = pkg.version
+        writeFileSync(resolve(distDir, 'manifest.json'), JSON.stringify(manifest, null, 2))
         cpSync(resolve(srcDir, '_locales'), resolve(distDir, '_locales'), { recursive: true })
         cpSync(resolve(srcDir, 'assets'), assetsDist, { recursive: true })
         cpSync(resolve(ROOT, 'node_modules/katex/dist/fonts'), resolve(assetsDist, 'katex/fonts'), { recursive: true })

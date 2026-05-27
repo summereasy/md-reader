@@ -70,8 +70,9 @@ const CN = {
 import { createElement as lucideIcon } from 'lucide'
 import {
   Code2, PanelLeft, ArrowUp, Sun, Moon, Monitor,
-  AlignCenter, AlignLeft, Settings, Search,
+  AlignCenter, AlignLeft, Settings, Search, Download,
 } from 'lucide'
+import { exportMarkdownHtml } from './export-html'
 
 function iconSvg(iconDef: unknown): string {
   const attrs = `viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`
@@ -92,6 +93,7 @@ const ICONS = {
   alignLeft: iconSvg(AlignLeft),
   settings: iconSvg(Settings),
   search: iconSvg(Search),
+  download: iconSvg(Download),
 }
 // ---------------------------------------------------------------------------
 
@@ -543,6 +545,18 @@ async function init(): Promise<void> {
   topBtn.style.display = 'none'
   topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }))
 
+  const exportBtn = document.createElement('button')
+  exportBtn.className = `${CN.BTN} md-reader__btn--export`
+  exportBtn.title = 'Export HTML'
+  exportBtn.innerHTML = ICONS.download
+  exportBtn.addEventListener('click', () => {
+    exportMarkdownHtml({
+      content: mdContent,
+      data,
+      filename: getFileName(currentFileURL) || 'document.md',
+    })
+  })
+
   const optionsBtn = document.createElement('button')
   optionsBtn.className = `${CN.BTN} md-reader__btn--options`
   optionsBtn.title = 'Options'
@@ -561,6 +575,7 @@ async function init(): Promise<void> {
   btnWrap.appendChild(sideBtn)
   btnWrap.appendChild(themeBtn)
   btnWrap.appendChild(alignBtn)
+  btnWrap.appendChild(exportBtn)
   btnWrap.appendChild(optionsBtn)
   btnWrap.appendChild(optionsMenu)
   btnWrap.appendChild(rawBtn)

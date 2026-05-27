@@ -1289,6 +1289,7 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
   }
 }
 
+/* @mdr-export:start */
 /* Content typography */
 .md-reader__markdown-content h1, .md-reader__markdown-content h2, .md-reader__markdown-content h3,
 .md-reader__markdown-content h4, .md-reader__markdown-content h5, .md-reader__markdown-content h6 {
@@ -1453,34 +1454,6 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
 .md-reader__markdown-content .hljs-emphasis { font-style: italic; }
 .md-reader__markdown-content .hljs-strong { font-weight: bold; }
 .md-reader__markdown-content .hljs-link { text-decoration: underline; }
-
-/* Copy button */
-.md-reader__btn--copy {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--mdr-btn-bg);
-  border: 1px solid var(--mdr-border);
-  border-radius: 4px;
-  padding: 4px;
-  cursor: pointer;
-  color: var(--mdr-btn-color);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.md-reader__markdown-content pre:hover .md-reader__btn--copy {
-  opacity: 1;
-}
-
-.md-reader__btn--copy:hover {
-  background: var(--mdr-btn-hover);
-}
-
-.md-reader__btn--copy .md-reader__copy-icon { display: inline; }
-.md-reader__btn--copy .md-reader__copy-success { display: none; }
-.md-reader__btn--copy.copied .md-reader__copy-icon { display: none; }
-.md-reader__btn--copy.copied .md-reader__copy-success { display: inline; color: var(--mdr-success); }
 
 .md-reader__markdown-content blockquote {
   margin: 22px 0;
@@ -1714,6 +1687,7 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
   background: var(--mdr-danger);
   font-size: 10px;
 }
+/* @mdr-export:end */
 
 /* Button wrap */
 .md-reader__button-wrap {
@@ -1789,6 +1763,11 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
   right: 136px;
 }
 
+.md-reader__btn--export {
+  position: absolute;
+  right: 176px;
+}
+
 .md-reader__btn--side-expand {
   display: initial;
   position: absolute;
@@ -1813,6 +1792,34 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
   right: 16px;
   bottom: 16px;
 }
+
+/* Copy button */
+.md-reader__btn--copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--mdr-btn-bg);
+  border: 1px solid var(--mdr-border);
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--mdr-btn-color);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.md-reader__markdown-content pre:hover .md-reader__btn--copy {
+  opacity: 1;
+}
+
+.md-reader__btn--copy:hover {
+  background: var(--mdr-btn-hover);
+}
+
+.md-reader__btn--copy .md-reader__copy-icon { display: inline; }
+.md-reader__btn--copy .md-reader__copy-success { display: none; }
+.md-reader__btn--copy.copied .md-reader__copy-icon { display: none; }
+.md-reader__btn--copy.copied .md-reader__copy-success { display: inline; color: var(--mdr-success); }
 
 .md-reader__options-menu {
   position: absolute;
@@ -2084,6 +2091,7 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
   opacity: 1;
 }
 
+/* @mdr-export:start */
 /* Task lists */
 .md-reader__markdown-content .task-list-item {
   list-style: none;
@@ -2258,6 +2266,7 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
 .md-reader__markdown-content .table-of-contents ul {
   padding-left: 1.5em;
 }
+/* @mdr-export:end */
 
 @media (min-width: 1660px) {
   .md-reader__markdown-content {

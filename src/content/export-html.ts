@@ -71,9 +71,10 @@ body {
 
 .md-content {
   box-sizing: border-box;
-  max-width: 720px;
+  width: 100%;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 32px 24px 48px;
+  padding: 32px 48px 48px;
   color: var(--mdr-text);
   font-size: ${fontSize}px;
   word-break: break-word;
@@ -128,7 +129,6 @@ body {
 @media (max-width: 640px) {
   .md-content {
     padding: 20px 16px 36px;
-    max-width: 100%;
   }
 
   #mdr-theme-toggle {
@@ -136,6 +136,18 @@ body {
     bottom: 12px;
     width: 40px;
     height: 40px;
+  }
+}
+
+@media (min-width: 1660px) {
+  .md-content {
+    max-width: 1120px;
+  }
+}
+
+@media (min-width: 2048px) {
+  .md-content {
+    max-width: 1280px;
   }
 }
 `.trim()

@@ -26,8 +26,19 @@ The logo and some internal class names still come from the original project line
 - Adjust reading font size from the in-page quick settings menu.
 - Copy code blocks with one click.
 - Zoom images in a lightweight viewer.
+- Export the rendered page as a standalone HTML file with theme toggle and print-friendly styles.
 - Auto-refresh source files when enabled.
 - Use keyboard shortcuts for sidebar, centered layout, refresh, and theme controls.
+
+## Export HTML
+
+Use the download button in the page toolbar to export the current rendered Markdown as a self-contained `.html` file. The export includes your current theme settings, a light/dark toggle, and print styles tuned for readable blockquotes and body text.
+
+Limitations to keep in mind:
+
+- **Mermaid**: export waits for in-page Mermaid rendering to finish before downloading.
+- **Images**: relative paths and `file://` images may not display when the HTML is opened from another location. Use absolute `http(s)://` URLs for portable exports.
+- **KaTeX**: exported HTML loads KaTeX CSS from jsDelivr, so math styling requires network access when viewing the file offline.
 
 ## Install From Source
 

@@ -304,6 +304,12 @@ function getQueryFileURL(fileTreeRootURL: string | null): string | null {
 
 // --- Mermaid lazy loading --------------------------------------------------
 let mermaidGen = 0
+let mermaidRenderChain: Promise<void> = Promise.resolve()
+
+function queueMermaidRender(container: HTMLElement, theme: ResolvedTheme): Promise<void> {
+  mermaidRenderChain = mermaidRenderChain.then(() => renderMermaidDiagrams(container, theme))
+  return mermaidRenderChain
+}
 
 async function renderMermaidDiagrams(container: HTMLElement, theme: ResolvedTheme): Promise<void> {
   const placeholders = container.querySelectorAll<HTMLElement>('.mermaid-placeholder')
@@ -389,7 +395,7 @@ async function init(): Promise<void> {
     theme: resolveTheme(data),
     plugins: data.mdPlugins,
   })
-  void renderMermaidDiagrams(mdContent, resolveTheme(data))
+  void queueMermaidRender(mdContent, resolveTheme(data))
 
   const rawContent = document.createElement('pre')
   rawContent.className = CN.RAW_CONTENT
@@ -549,12 +555,18 @@ async function init(): Promise<void> {
   exportBtn.className = `${CN.BTN} md-reader__btn--export`
   exportBtn.title = 'Export HTML'
   exportBtn.innerHTML = ICONS.download
-  exportBtn.addEventListener('click', () => {
-    exportMarkdownHtml({
-      content: mdContent,
-      data,
-      filename: getFileName(currentFileURL) || 'document.md',
-    })
+  exportBtn.addEventListener('click', async () => {
+    exportBtn.disabled = true
+    try {
+      await queueMermaidRender(mdContent, resolveTheme(data))
+      exportMarkdownHtml({
+        content: mdContent,
+        data,
+        filename: getFileName(currentFileURL) || 'document.md',
+      })
+    } finally {
+      exportBtn.disabled = false
+    }
   })
 
   const optionsBtn = document.createElement('button')
@@ -743,7 +755,7 @@ async function init(): Promise<void> {
       theme: resolveTheme(data),
       plugins: data.mdPlugins,
     })
-    void renderMermaidDiagrams(mdContent, resolveTheme(data))
+    void queueMermaidRender(mdContent, resolveTheme(data))
   }
 
   // --- Checkbox toggle logic (DOM-direct, no re-render) ---

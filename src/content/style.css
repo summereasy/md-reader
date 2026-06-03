@@ -2287,3 +2287,23 @@ body.md-reader.side-collapsed .md-reader__btn--side-expand {
     max-width: 1280px;
   }
 }
+
+@media print {
+  .md-reader__button-wrap,
+  .md-reader__side,
+  .md-reader__modal,
+  .mdr-toast-wrap,
+  .md-reader__btn--copy,
+  .md-reader__head-anchor {
+    display: none !important;
+  }
+
+  body.md-reader .md-reader__body {
+    padding-left: 0 !important;
+  }
+
+  .md-reader__markdown-content {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}

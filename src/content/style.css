@@ -1687,6 +1687,58 @@ body.md-reader.side-expanded .md-reader__btn--side-expand {
   background: var(--mdr-danger);
   font-size: 10px;
 }
+
+@media print {
+  html,
+  body,
+  body.md-reader,
+  body.md-reader .md-reader__body,
+  .md-reader__markdown-content {
+    background: #fff !important;
+  }
+
+  .md-reader__markdown-content .info,
+  .md-reader__markdown-content .tip,
+  .md-reader__markdown-content .tips,
+  .md-reader__markdown-content .success,
+  .md-reader__markdown-content .warning,
+  .md-reader__markdown-content .danger,
+  .md-reader__markdown-content .markdown-alert {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    break-inside: avoid;
+  }
+
+  .md-reader__markdown-content blockquote:not(.info):not(.tip):not(.tips):not(.success):not(.warning):not(.danger) {
+    color: #333 !important;
+    border-left-color: #666 !important;
+    background: transparent !important;
+  }
+
+  .md-reader__markdown-content blockquote:not(.info):not(.tip):not(.tips):not(.success):not(.warning):not(.danger) > p {
+    color: #333 !important;
+  }
+
+  .md-reader__markdown-content .markdown-alert-note .markdown-alert-title {
+    color: var(--mdr-link) !important;
+  }
+
+  .md-reader__markdown-content .markdown-alert-important .markdown-alert-title {
+    color: var(--mdr-important) !important;
+  }
+
+  .md-reader__markdown-content .markdown-alert-tip .markdown-alert-title {
+    color: var(--mdr-success) !important;
+  }
+
+  .md-reader__markdown-content .markdown-alert-warning .markdown-alert-title {
+    color: var(--mdr-warning) !important;
+  }
+
+  .md-reader__markdown-content .markdown-alert-caution .markdown-alert-title {
+    color: var(--mdr-danger) !important;
+  }
+}
 /* @mdr-export:end */
 
 /* Button wrap */

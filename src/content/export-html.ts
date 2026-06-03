@@ -157,13 +157,14 @@ body {
   }
 
   html,
-  body {
+  body,
+  .md-content {
     background: #fff !important;
     color: #1a1a1a !important;
   }
 
   .md-content,
-  .md-content p,
+  .md-content p:not(.markdown-alert-title),
   .md-content li,
   .md-content td,
   .md-content th {
@@ -179,8 +180,8 @@ body {
     color: #111 !important;
   }
 
-  .md-content blockquote,
-  .md-content blockquote p {
+  .md-content blockquote:not(.info):not(.tip):not(.tips):not(.success):not(.warning):not(.danger),
+  .md-content blockquote:not(.info):not(.tip):not(.tips):not(.success):not(.warning):not(.danger) p {
     color: #333 !important;
     border-left-color: #666 !important;
     background: transparent !important;

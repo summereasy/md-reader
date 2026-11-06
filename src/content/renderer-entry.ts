@@ -559,7 +559,7 @@ async function init(): Promise<void> {
     exportBtn.disabled = true
     try {
       await queueMermaidRender(mdContent, resolveTheme(data))
-      exportMarkdownHtml({
+      await exportMarkdownHtml({
         content: mdContent,
         data,
         filename: getFileName(currentFileURL) || 'document.md',

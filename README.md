@@ -37,7 +37,7 @@ Use the download button in the page toolbar to export the current rendered Markd
 Limitations to keep in mind:
 
 - **Mermaid**: export waits for in-page Mermaid rendering to finish before downloading.
-- **Images**: relative paths and `file://` images may not display when the HTML is opened from another location. Use absolute `http(s)://` URLs for portable exports.
+- **Images**: local (`file://`) images are inlined as base64 data URIs so the exported file stays portable. Remote `http(s)://` images keep their original URLs and require network access.
 - **KaTeX**: exported HTML loads KaTeX CSS from jsDelivr, so math styling requires network access when viewing the file offline.
 
 ## Install From Source

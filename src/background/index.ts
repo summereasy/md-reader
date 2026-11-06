@@ -29,6 +29,20 @@ async function fetchText(url: string): Promise<string> {
   throw lastErr
 }
 
+async function fetchDataUrl(url: string): Promise<string> {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
+  const blob = await res.blob()
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  // Service Worker 里没有 FileReader，分块转 base64
+  let binary = ''
+  const chunkSize = 0x8000
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+  }
+  return `data:${blob.type || 'application/octet-stream'};base64,${btoa(binary)}`
+}
+
 // Message routing
 interface MessagePayload {
   action: string
@@ -91,6 +105,16 @@ async function handleMessage(msg: MessagePayload): Promise<unknown> {
         return await fetchText(url)
       } catch (err) {
         console.error(`[md-reader] readFile failed after retries (${url}):`, err)
+        return undefined
+      }
+    }
+    case 'fetchDataUrl': {
+      const url = data?.url
+      if (!url) return 'Error: URL is undefined.'
+      try {
+        return await fetchDataUrl(url)
+      } catch (err) {
+        console.error(`[md-reader] fetchDataUrl failed (${url}):`, err)
         return undefined
       }
     }

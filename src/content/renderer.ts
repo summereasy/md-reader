@@ -1,7 +1,7 @@
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
 import type { Options as MdOptions } from 'markdown-it'
-import mSub from 'markdown-it-sub'
+import mSub from './plugins/sub'
 import mSup from 'markdown-it-sup'
 import mIns from 'markdown-it-ins'
 import mAbbr from 'markdown-it-abbr'

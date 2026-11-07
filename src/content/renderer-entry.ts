@@ -2,8 +2,8 @@
 import throttle from 'lodash.throttle'
 import { storage } from '@/shared/storage'
 import { mdRender, mermaidBlocks } from './renderer'
-import { FONT_SIZE_MAP, LIGHT_THEMES, DARK_THEMES, getDefaultData } from '@/shared/types'
-import type { FontSize, StorageData, ColorMode, LightTheme, DarkTheme, ContentWidthMode } from '@/shared/types'
+import { FONT_SIZE_MAP, LIGHT_THEMES, DARK_THEMES, PHONE_WIDTHS, getDefaultData } from '@/shared/types'
+import type { FontSize, StorageData, ColorMode, LightTheme, DarkTheme, ContentWidthMode, DisplayMode } from '@/shared/types'
 import { getEventBus } from './plugins/event'
 import { CHECKBOX_ICONS } from './plugins/custom-checkbox'
 import blockCopyPlugin from './plugins/block-copy'
@@ -28,7 +28,9 @@ const BODY = document.body
 
 const HEADERS = 'h1, h2, h3, h4, h5, h6'
 const ROOT_THEME_ATTR = 'data-mdr-theme'
+const ROOT_DISPLAY_ATTR = 'data-mdr-display'
 const SIDE_WIDTH_VAR = '--mdr-side-width'
+const PHONE_WIDTH_VAR = '--mdr-phone-width'
 const CONTENT_FONT_SIZE_VAR = '--mdr-content-font-size'
 const SIDE_WIDTH_STORAGE_KEY = 'sideWidth'
 const LEGACY_DEFAULT_SIDE_WIDTH = 260
@@ -69,7 +71,7 @@ const CN = {
 // --- Lucide icons ----------------------------------------------------------
 import { createElement as lucideIcon } from 'lucide'
 import {
-  Code2, PanelLeft, ArrowUp, Sun, Moon, Monitor,
+  Code2, PanelLeft, ArrowUp, Sun, Moon, Monitor, Smartphone,
   AlignCenter, AlignLeft, Settings, Search, Download,
 } from 'lucide'
 import { exportMarkdownHtml } from './export-html'
@@ -88,7 +90,21 @@ const ICONS = {
   top: iconSvg(ArrowUp),
   sun: iconSvg(Sun),
   moon: iconSvg(Moon),
-  auto: iconSvg(Monitor),
+  // "A" 表示 Auto(跟随系统), 显示器图标让给桌面/手机显示模式切换;
+  // 用实心字形与其他图标 (显示器/齿轮等实心风格) 保持视觉重量一致
+  auto: iconSvg([
+    [
+      'path',
+      {
+        d: 'M12 2 2.5 21.5h4.8L9.3 16.6h5.4l2 4.9h4.8L12 2Zm0 5.6 2.2 5.5h-4.4L12 7.6Z',
+        'fill-rule': 'evenodd',
+        fill: 'currentColor',
+        stroke: 'none',
+      },
+    ],
+  ]),
+  desktop: iconSvg(Monitor),
+  phone: iconSvg(Smartphone),
   alignCenter: iconSvg(AlignCenter),
   alignLeft: iconSvg(AlignLeft),
   settings: iconSvg(Settings),
@@ -136,6 +152,25 @@ function toSplashTheme(theme: ResolvedTheme): 'light' | 'dark' {
 
 function setTheme(data: StorageData): void {
   HTML.setAttribute(ROOT_THEME_ATTR, resolveTheme(data))
+}
+
+const DEFAULT_PHONE_WIDTH = 393
+const MIN_PHONE_WIDTH = 320
+const MAX_PHONE_WIDTH = 520
+
+function isPhoneMode(data: StorageData): boolean {
+  return (data.displayMode ?? 'desktop') === 'phone'
+}
+
+function getPhoneWidth(data: StorageData): number {
+  const width = Math.round(Number(data.phoneWidth ?? DEFAULT_PHONE_WIDTH))
+  if (!Number.isFinite(width)) return DEFAULT_PHONE_WIDTH
+  return Math.min(MAX_PHONE_WIDTH, Math.max(MIN_PHONE_WIDTH, width))
+}
+
+function setDisplayMode(data: StorageData): void {
+  HTML.setAttribute(ROOT_DISPLAY_ATTR, isPhoneMode(data) ? 'phone' : 'desktop')
+  HTML.style.setProperty(PHONE_WIDTH_VAR, `${getPhoneWidth(data)}px`)
 }
 
 function rerender(data: StorageData, mdContent: HTMLElement): void {
@@ -279,6 +314,22 @@ function setContentFontSize(fontSize?: FontSize): void {
   HTML.style.setProperty(CONTENT_FONT_SIZE_VAR, `${value}px`)
 }
 
+const FONT_SIZE_ORDER = Object.keys(FONT_SIZE_MAP) as FontSize[]
+
+/**
+ * 手机模式默认小字号, 桌面模式默认大字号.
+ * 切换显示模式时把超出该模式默认值的字号拉回默认值; 用户在模式内手动调整过的字号保持不变.
+ */
+function clampFontSizeForDisplayMode(fontSize: FontSize | undefined, mode: DisplayMode): FontSize {
+  const smallIndex = FONT_SIZE_ORDER.indexOf('Small')
+  const largeIndex = FONT_SIZE_ORDER.indexOf('Large')
+  const found = FONT_SIZE_ORDER.indexOf(fontSize ?? 'Small')
+  const current = found >= 0 ? found : smallIndex
+  if (mode === 'phone' && current > smallIndex) return 'Small'
+  if (mode === 'desktop' && current < largeIndex) return 'Large'
+  return FONT_SIZE_ORDER[current]
+}
+
 function getFileTreeRootURL(data: StorageData): string | null {
   const fallbackRoot = getParentDirectoryURL(window.location.href)
   if (!fallbackRoot) return null
@@ -369,6 +420,7 @@ async function init(): Promise<void> {
 
   injectKatexStyle()
   setTheme(data)
+  setDisplayMode(data)
   setContentFontSize(data.fontSize)
   if (
     typeof data.sideWidth === 'number' &&
@@ -432,14 +484,22 @@ async function init(): Promise<void> {
   mdBody.className = CN.BODY
   mdBody.append(mdContent, rawContent)
 
+  const isPhoneView = (): boolean => isPhoneMode(data)
+
+  // 记录上一次生效的显示模式, 用于区分 "切换模式" 与 "同一状态的重复同步"
+  let lastDisplayMode: DisplayMode = isPhoneView() ? 'phone' : 'desktop'
+
+  // 手机模拟 / 窄窗口都按抽屉式侧边栏处理
+  const isCompactLayout = (): boolean => isPhoneView() || window.innerWidth <= 960
+
   function getNextSidebarHiddenValue(): boolean {
-    return window.innerWidth <= 960
+    return isCompactLayout()
       ? !BODY.classList.contains(CN.SIDE_EXPANDED)
       : !BODY.classList.contains(CN.SIDE_COLLAPSED)
   }
 
   function toggleSidebar(): void {
-    if (window.innerWidth <= 960) {
+    if (isCompactLayout()) {
       const expanded = BODY.classList.toggle(CN.SIDE_EXPANDED)
       if (expanded) {
         const close = (e: Event) => {
@@ -496,6 +556,10 @@ async function init(): Promise<void> {
   sideBtn.title = 'Toggle sidebar'
   sideBtn.innerHTML = ICONS.side
   sideBtn.addEventListener('click', () => {
+    if (isPhoneView()) {
+      toggleSidebar()
+      return
+    }
     saveConfig('hiddenSide', getNextSidebarHiddenValue())
   })
 
@@ -534,13 +598,30 @@ async function init(): Promise<void> {
     updateQuickButtons()
   })
 
+  const displayBtn = document.createElement('button')
+  displayBtn.className = `${CN.BTN} md-reader__btn--display`
+  displayBtn.title = 'Display: desktop'
+  displayBtn.innerHTML = ICONS.desktop
+  displayBtn.setAttribute('aria-pressed', 'false')
+  displayBtn.addEventListener('click', () => {
+    const next: DisplayMode = isPhoneView() ? 'desktop' : 'phone'
+    data.displayMode = next
+    applyDisplayMode()
+    saveConfig('displayMode', next)
+  })
+
   function updateQuickButtons(): void {
     const mode = data.colorMode ?? 'auto'
     themeBtn.innerHTML = mode === 'dark' ? ICONS.moon : mode === 'light' ? ICONS.sun : ICONS.auto
     themeBtn.title = `Theme: ${mode}`
-    const centered = mdContent.classList.contains(CN.CENTERED)
+    // 手动宽度模式下不使用 centered 类, 统一以 data.centered 为准
+    const centered = !!data.centered
     alignBtn.innerHTML = centered ? ICONS.alignCenter : ICONS.alignLeft
     alignBtn.title = centered ? 'Centered' : 'Left aligned'
+    const phone = isPhoneView()
+    displayBtn.innerHTML = phone ? ICONS.phone : ICONS.desktop
+    displayBtn.title = phone ? 'Display: phone' : 'Display: desktop'
+    displayBtn.setAttribute('aria-pressed', String(phone))
   }
   updateQuickButtons()
 
@@ -587,6 +668,7 @@ async function init(): Promise<void> {
   btnWrap.appendChild(sideBtn)
   btnWrap.appendChild(themeBtn)
   btnWrap.appendChild(alignBtn)
+  btnWrap.appendChild(displayBtn)
   btnWrap.appendChild(exportBtn)
   btnWrap.appendChild(optionsBtn)
   btnWrap.appendChild(optionsMenu)
@@ -641,6 +723,10 @@ async function init(): Promise<void> {
 
     event.preventDefault()
     event.stopPropagation()
+    if (isPhoneView()) {
+      toggleSidebar()
+      return
+    }
     saveConfig('hiddenSide', getNextSidebarHiddenValue())
   }, true)
 
@@ -719,6 +805,7 @@ async function init(): Promise<void> {
       case 'toggleCentered': data.centered = !!value; animateCenterToggle(!!value); updateQuickButtons(); break
       case 'updateContentWidthMode':
       case 'updateContentWidthPercent': applyContentWidth(); updateOptionsMenuState(); break
+      case 'updateDisplayMode': applyDisplayMode(); break
       case 'toggleSide': toggleSidebar(); break
     }
   })
@@ -741,7 +828,7 @@ async function init(): Promise<void> {
     existingIcon.setAttribute('href', chrome.runtime.getURL('assets/logo-stroke.png'))
   }
   BODY.classList.add('md-reader')
-  applyContentWidth()
+  applyDisplayMode()
   if (queryFileURL) {
     await openMarkdownFile(queryFileURL, { updateHistory: false })
   } else {
@@ -1474,6 +1561,19 @@ async function init(): Promise<void> {
           data-option="contentWidth"
         />
       </div>
+      <div class="md-reader__options-group">
+        <div class="md-reader__options-label">Display</div>
+        <div class="md-reader__side-switch-control" data-display-mode-switch>
+          <button type="button" data-display-mode="desktop">Desktop</button>
+          <button type="button" data-display-mode="phone">Phone</button>
+        </div>
+        <div class="md-reader__options-variant-row" data-phone-width-row style="margin-top:10px">
+          <span>Phone width</span>
+          <select data-phone-width>
+            ${PHONE_WIDTHS.map(w => `<option value="${w.value}">${w.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
     `
 
     const hideDotFiles = optionsMenu.querySelector<HTMLInputElement>('[data-option="hideDotFiles"]')
@@ -1545,6 +1645,26 @@ async function init(): Promise<void> {
       saveConfig('contentWidthPercent', Number(widthSlider.value))
     })
 
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-display-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const mode = button.dataset.displayMode as DisplayMode
+        if ((data.displayMode ?? 'desktop') === mode) return
+        data.displayMode = mode
+        applyDisplayMode()
+        saveConfig('displayMode', mode)
+      })
+    })
+
+    const phoneWidthSelect = optionsMenu.querySelector<HTMLSelectElement>('[data-phone-width]')
+    phoneWidthSelect?.addEventListener('change', () => {
+      const width = getPhoneWidth({ phoneWidth: Number(phoneWidthSelect.value) })
+      data.phoneWidth = width
+      setDisplayMode(data)
+      applyContentWidth()
+      updateOptionsMenuState()
+      saveConfig('phoneWidth', width)
+    })
+
     updateOptionsMenuState()
   }
 
@@ -1590,6 +1710,15 @@ async function init(): Promise<void> {
     if (widthSliderHead) widthSliderHead.style.display = isManual ? '' : 'none'
     if (widthSlider) { widthSlider.value = String(data.contentWidthPercent ?? 100); widthSlider.style.display = isManual ? '' : 'none' }
     if (widthOutput) widthOutput.value = `${data.contentWidthPercent ?? 100}%`
+
+    const displayMode = data.displayMode ?? 'desktop'
+    optionsMenu.querySelectorAll<HTMLButtonElement>('[data-display-mode]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.displayMode === displayMode)
+    })
+    const phoneWidthRow = optionsMenu.querySelector<HTMLElement>('[data-phone-width-row]')
+    if (phoneWidthRow) phoneWidthRow.style.display = displayMode === 'phone' ? '' : 'none'
+    const phoneWidthSelect = optionsMenu.querySelector<HTMLSelectElement>('[data-phone-width]')
+    if (phoneWidthSelect) phoneWidthSelect.value = String(getPhoneWidth(data))
   }
 
   function getFontSizeAtIndex(index: number): FontSize {
@@ -1606,14 +1735,39 @@ async function init(): Promise<void> {
       mdContent.classList.toggle(CN.CENTERED, !!data.centered)
     } else {
       mdContent.classList.remove(CN.CENTERED)
-      const pct = (data.contentWidthPercent ?? 100) / 100
-      const paddingLeft = parseFloat(getComputedStyle(mdBody).paddingLeft) || 0
-      const available = mdBody.offsetWidth - paddingLeft
-      const w = Math.round(available * pct)
-      mdContent.style.maxWidth = `${w}px`
+      const pct = data.contentWidthPercent ?? 100
+      // 以 auto 模式的自然最大宽度 (980/1120/1280px) 为基准缩放,
+      // 这样 100% 与 auto 等价, 居中/靠左始终有可见位移 (撑满可用区域时无法区分).
+      mdContent.style.maxWidth = `calc(var(--mdr-natural-max, 980px) * ${pct} / 100)`
       mdContent.style.marginLeft = data.centered ? 'auto' : '0'
       mdContent.style.marginRight = 'auto'
     }
+  }
+
+  /** 应用桌面/手机显示模式: 同步根节点标记、侧边栏状态与内容宽度. */
+  function applyDisplayMode(): void {
+    const nextMode: DisplayMode = isPhoneView() ? 'phone' : 'desktop'
+    const modeChanged = lastDisplayMode !== nextMode
+    lastDisplayMode = nextMode
+    setDisplayMode(data)
+    BODY.classList.remove(CN.SIDE_EXPANDED)
+    if (isPhoneView()) {
+      BODY.classList.remove(CN.SIDE_COLLAPSED)
+    } else {
+      BODY.classList.toggle(CN.SIDE_COLLAPSED, !!data.hiddenSide)
+    }
+    // 切换模式时把字号拉回该模式的默认值 (手机 Small / 桌面 Large)
+    if (modeChanged) {
+      const clamped = clampFontSizeForDisplayMode(data.fontSize, nextMode)
+      if (clamped !== data.fontSize) {
+        data.fontSize = clamped
+        setContentFontSize(clamped)
+        saveConfig('fontSize', clamped)
+      }
+    }
+    applyContentWidth()
+    updateQuickButtons()
+    updateOptionsMenuState()
   }
 
   let centerAnim: Animation | undefined

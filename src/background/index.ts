@@ -64,6 +64,8 @@ const actionMap: Record<string, string> = {
   clickableTodoList: 'updateClickableTodoList',
   contentWidthMode: 'updateContentWidthMode',
   contentWidthPercent: 'updateContentWidthPercent',
+  displayMode: 'updateDisplayMode',
+  phoneWidth: 'updateDisplayMode',
 }
 
 function updatePage(key: string, value?: unknown): void {

@@ -23,7 +23,9 @@ The logo and some internal class names still come from the original project line
 - Use a resizable sidebar with Files and TOC views.
 - Browse local Markdown files from the same directory tree without reloading the extension UI.
 - Switch between light, dark, and auto themes.
-- Adjust reading font size from the in-page quick settings menu.
+- Preview desktop and phone layouts: phone mode renders the document inside a selectable phone-width canvas (360–430px presets, 393px by default) with the sidebar as a drawer.
+- Adjust reading font size from the in-page quick settings menu; switching display modes applies the mode default (Small on phone, Large on desktop).
+- Fine-tune content width as a percentage of the natural reading width, where 100% matches auto.
 - Copy code blocks with one click.
 - Zoom images in a lightweight viewer.
 - Export the rendered page as a standalone HTML file with theme toggle and print-friendly styles.

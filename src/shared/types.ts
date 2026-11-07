@@ -56,6 +56,17 @@ export const FONT_SIZE_MAP: Record<FontSize, number> = {
 
 export type ContentWidthMode = 'auto' | 'manual'
 
+export type DisplayMode = 'desktop' | 'phone'
+
+export const PHONE_WIDTHS: { value: number; label: string }[] = [
+  { value: 360, label: '360 · Android' },
+  { value: 375, label: '375 · iPhone SE' },
+  { value: 390, label: '390 · iPhone 14' },
+  { value: 393, label: '393 · iPhone 15 / 16' },
+  { value: 412, label: '412 · Pixel' },
+  { value: 430, label: '430 · Pro Max' },
+]
+
 export interface StorageData {
   enable?: boolean
   refresh?: boolean
@@ -74,6 +85,8 @@ export interface StorageData {
   fileTreeRootURL?: string
   contentWidthMode?: ContentWidthMode
   contentWidthPercent?: number
+  displayMode?: DisplayMode
+  phoneWidth?: number
 }
 
 export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
@@ -95,6 +108,8 @@ export function getDefaultData(merge: Partial<StorageData> = {}): StorageData {
     fileTreeRootURL: undefined,
     contentWidthMode: 'auto',
     contentWidthPercent: 100,
+    displayMode: 'desktop',
+    phoneWidth: 393,
     ...merge,
   }
 }

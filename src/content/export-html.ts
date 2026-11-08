@@ -82,7 +82,88 @@ body {
 }
 
 .md-content img {
-  cursor: default;
+  cursor: zoom-in;
+}
+
+/* Image lightbox */
+#mdr-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.92);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+#mdr-lightbox.opened {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.2s ease, visibility 0s linear 0s;
+}
+
+html.mdr-lightbox-open,
+html.mdr-lightbox-open body {
+  overflow: hidden;
+}
+
+html.mdr-lightbox-open #mdr-theme-toggle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#mdr-lightbox-img {
+  display: block;
+  max-width: 100vw;
+  max-height: 100vh;
+  transform-origin: center center;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+}
+
+#mdr-lightbox-close {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(24, 24, 24, 0.72);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s, transform 0.15s;
+}
+
+#mdr-lightbox-close:hover {
+  background: rgba(64, 64, 64, 0.85);
+}
+
+#mdr-lightbox-close:active {
+  transform: scale(0.94);
+}
+
+#mdr-lightbox-close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 #mdr-theme-toggle {
@@ -137,6 +218,11 @@ body {
     width: 40px;
     height: 40px;
   }
+
+  #mdr-lightbox-close {
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+  }
 }
 
 @media (min-width: 1660px) {
@@ -152,7 +238,8 @@ body {
 }
 
 @media print {
-  #mdr-theme-toggle {
+  #mdr-theme-toggle,
+  #mdr-lightbox {
     display: none !important;
   }
 
@@ -247,6 +334,338 @@ function sanitizeFilename(name: string): string {
 const SUN_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`
 const MOON_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`
 
+/**
+ * 导出 HTML 内的图片查看器: 点击图片全屏查看, 支持双指缩放 / 滚轮缩放 /
+ * 双击缩放 / 拖动平移, 用右上角关闭按钮、点击背景或 Esc 返回正文.
+ */
+const LIGHTBOX_SCRIPT = `(function () {
+  var root = document.documentElement;
+
+  // 提前创建看图器并挂上事件委托: 导出文件可能很大 (大量内嵌图片),
+  // 用户往往在正文仍在解析/加载时就开始看图片, 不能等到文件末尾脚本执行后才有交互.
+  var box = document.createElement('div');
+  box.id = 'mdr-lightbox';
+  box.setAttribute('aria-hidden', 'true');
+  var view = document.createElement('img');
+  view.id = 'mdr-lightbox-img';
+  view.alt = '';
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'mdr-lightbox-close';
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', '关闭图片预览');
+  closeBtn.innerHTML = '&times;';
+  box.appendChild(view);
+  box.appendChild(closeBtn);
+  document.body.appendChild(box);
+
+  var MAX_SCALE = 8;
+  var DOUBLE_SCALE = 2.5;
+  var scale = 1;
+  var tx = 0;
+  var ty = 0;
+  var pointers = new Map();
+  var drag = null;
+  var pinch = null;
+  var lastTapAt = 0;
+  var lastTapX = 0;
+  var lastTapY = 0;
+  var suppressClickUntil = 0;
+  var lastTrigger = null;
+
+  function render() {
+    view.style.transform = 'translate3d(' + tx + 'px, ' + ty + 'px, 0) scale(' + scale + ')';
+  }
+
+  function boxCenter() {
+    var rect = box.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }
+
+  function clampPan() {
+    var w = view.offsetWidth * scale;
+    var h = view.offsetHeight * scale;
+    var maxX = Math.max(0, (w - box.clientWidth) / 2 + 24);
+    var maxY = Math.max(0, (h - box.clientHeight) / 2 + 24);
+    tx = Math.min(maxX, Math.max(-maxX, tx));
+    ty = Math.min(maxY, Math.max(-maxY, ty));
+  }
+
+  function zoomTo(target, cx, cy) {
+    target = Math.min(MAX_SCALE, Math.max(1, target));
+    if (target <= 1.001) {
+      scale = 1;
+      tx = 0;
+      ty = 0;
+      render();
+      return;
+    }
+    var center = boxCenter();
+    var px = cx - center.x;
+    var py = cy - center.y;
+    var ratio = target / scale;
+    tx = px - ratio * (px - tx);
+    ty = py - ratio * (py - ty);
+    scale = target;
+    clampPan();
+    render();
+  }
+
+  function resetView() {
+    scale = 1;
+    tx = 0;
+    ty = 0;
+    render();
+  }
+
+  // 让图片先适配视口: 小图适度放大 (最多 4x), 大图缩小, 保证点开后是"全屏看图"而不是原尺寸.
+  function fitImage() {
+    var natW = view.naturalWidth;
+    var natH = view.naturalHeight;
+    if (!natW || !natH) return false;
+    var availW = box.clientWidth || window.innerWidth;
+    var availH = box.clientHeight || window.innerHeight;
+    var fit = Math.min(availW / natW, availH / natH, 4);
+    view.style.width = Math.floor(natW * fit) + 'px';
+    view.style.height = Math.floor(natH * fit) + 'px';
+    return true;
+  }
+
+  function scheduleFit() {
+    if (fitImage()) return;
+    setTimeout(function () {
+      if (box.classList.contains('opened') && fitImage()) {
+        clampPan();
+        render();
+      }
+    }, 150);
+  }
+
+  function refit() {
+    if (!box.classList.contains('opened')) return;
+    if (!fitImage()) return;
+    clampPan();
+    render();
+  }
+
+  function openViewer(src, alt, trigger) {
+    lastTrigger = trigger || null;
+    view.setAttribute('src', src);
+    view.setAttribute('alt', alt || '');
+    view.style.width = 'auto';
+    view.style.height = 'auto';
+    resetView();
+    box.classList.add('opened');
+    box.setAttribute('aria-hidden', 'false');
+    root.classList.add('mdr-lightbox-open');
+    scheduleFit();
+    try {
+      closeBtn.focus({ preventScroll: true });
+    } catch (error) {
+      closeBtn.focus();
+    }
+  }
+
+  function closeViewer() {
+    if (!box.classList.contains('opened')) return;
+    box.classList.remove('opened');
+    box.setAttribute('aria-hidden', 'true');
+    root.classList.remove('mdr-lightbox-open');
+    pointers.clear();
+    drag = null;
+    pinch = null;
+    if (lastTrigger && lastTrigger.focus) {
+      if (lastTrigger.tagName === 'IMG' && !lastTrigger.hasAttribute('tabindex')) {
+        lastTrigger.setAttribute('tabindex', '-1');
+      }
+      try {
+        lastTrigger.focus({ preventScroll: true });
+      } catch (error) {
+        lastTrigger.focus();
+      }
+    }
+    lastTrigger = null;
+  }
+
+  function distance(a, b) {
+    var dx = a.x - b.x;
+    var dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy) || 1;
+  }
+
+  function midpoint(a, b) {
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    if (!target || target.tagName !== 'IMG') return;
+    if (!target.closest || !target.closest('.md-content')) return;
+    if (target.closest('a')) return;
+    var src = target.currentSrc || target.src;
+    if (!src) return;
+    event.preventDefault();
+    openViewer(src, target.getAttribute('alt'), target);
+  });
+
+  view.addEventListener('load', refit);
+  window.addEventListener('resize', refit);
+
+  closeBtn.addEventListener('click', closeViewer);
+
+  box.addEventListener('click', function (event) {
+    if (event.target !== box) return;
+    if (performance.now() < suppressClickUntil) return;
+    closeViewer();
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeViewer();
+  });
+
+  box.addEventListener('wheel', function (event) {
+    if (!box.classList.contains('opened')) return;
+    event.preventDefault();
+    zoomTo(scale * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY);
+  }, { passive: false });
+
+  box.addEventListener('dblclick', function (event) {
+    if (!box.classList.contains('opened')) return;
+    event.preventDefault();
+    zoomTo(scale > 1.01 ? 1 : DOUBLE_SCALE, event.clientX, event.clientY);
+  });
+
+  box.addEventListener('dragstart', function (event) {
+    event.preventDefault();
+  });
+
+  box.addEventListener('pointerdown', function (event) {
+    if (!box.classList.contains('opened')) return;
+    if (event.target === closeBtn) return;
+    if (event.target === view) event.preventDefault();
+    try {
+      box.setPointerCapture(event.pointerId);
+    } catch (error) {
+      /* pointer capture is optional */
+    }
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size === 1) {
+      drag = {
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        tx: tx,
+        ty: ty,
+        moved: false,
+        at: event.timeStamp,
+      };
+      pinch = null;
+    } else if (pointers.size === 2) {
+      var list = Array.from(pointers.values());
+      pinch = {
+        distance: distance(list[0], list[1]),
+        mid: midpoint(list[0], list[1]),
+        scale: scale,
+        tx: tx,
+        ty: ty,
+      };
+      drag = null;
+    }
+  });
+
+  box.addEventListener('pointermove', function (event) {
+    if (!pointers.has(event.pointerId)) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+    if (pointers.size >= 2 && pinch) {
+      var list = Array.from(pointers.values());
+      var nextScale = Math.min(MAX_SCALE, Math.max(1, pinch.scale * (distance(list[0], list[1]) / pinch.distance)));
+      var mid = midpoint(list[0], list[1]);
+      if (nextScale <= 1.001) {
+        scale = 1;
+        tx = 0;
+        ty = 0;
+      } else {
+        var center = boxCenter();
+        var ratio = nextScale / pinch.scale;
+        var px = pinch.mid.x - center.x;
+        var py = pinch.mid.y - center.y;
+        tx = (px - ratio * (px - pinch.tx)) + (mid.x - pinch.mid.x);
+        ty = (py - ratio * (py - pinch.ty)) + (mid.y - pinch.mid.y);
+        scale = nextScale;
+        clampPan();
+      }
+      suppressClickUntil = performance.now() + 400;
+      render();
+      return;
+    }
+
+    if (!drag || drag.id !== event.pointerId) return;
+    var dx = event.clientX - drag.x;
+    var dy = event.clientY - drag.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      drag.moved = true;
+      suppressClickUntil = performance.now() + 400;
+    }
+    if (scale > 1.001) {
+      tx = drag.tx + dx;
+      ty = drag.ty + dy;
+      clampPan();
+      render();
+    }
+  });
+
+  function endPointer(event) {
+    if (!pointers.has(event.pointerId)) return;
+    var wasDrag = drag && drag.id === event.pointerId ? drag : null;
+    pointers.delete(event.pointerId);
+
+    if (pointers.size === 1) {
+      var remaining = Array.from(pointers.entries())[0];
+      if (remaining) {
+        drag = {
+          id: remaining[0],
+          x: remaining[1].x,
+          y: remaining[1].y,
+          tx: tx,
+          ty: ty,
+          moved: false,
+          at: event.timeStamp,
+        };
+      }
+      pinch = null;
+      return;
+    }
+    if (pointers.size > 1) return;
+
+    drag = null;
+    pinch = null;
+    if (!wasDrag || wasDrag.moved) return;
+
+    if (event.pointerType === 'mouse') return;
+    if (event.target !== view) return;
+
+    var now = event.timeStamp;
+    var isDoubleTap = now - lastTapAt < 320
+      && Math.abs(event.clientX - lastTapX) < 32
+      && Math.abs(event.clientY - lastTapY) < 32;
+    if (isDoubleTap) {
+      zoomTo(scale > 1.01 ? 1 : DOUBLE_SCALE, event.clientX, event.clientY);
+      lastTapAt = 0;
+    } else {
+      lastTapAt = now;
+      lastTapX = event.clientX;
+      lastTapY = event.clientY;
+    }
+  }
+
+  box.addEventListener('pointerup', endPointer);
+  box.addEventListener('pointercancel', endPointer);
+
+  box.addEventListener('contextmenu', function (event) {
+    if (box.classList.contains('opened')) event.preventDefault();
+  });
+})();`
+
 function buildHtmlDocument(options: {
   bodyHtml: string
   title: string
@@ -269,6 +688,7 @@ function buildHtmlDocument(options: {
   <style>${css}</style>
 </head>
 <body>
+  <script>${LIGHTBOX_SCRIPT}</script>
   <article class="md-content">${bodyHtml}</article>
   <button id="mdr-theme-toggle" type="button" aria-label="切换主题">${MOON_ICON}</button>
   <script>
@@ -329,6 +749,64 @@ function fetchImageDataUrl(url: string): Promise<string | undefined> {
 }
 
 /**
+ * 内嵌图片前先压缩: 导出的 HTML 里常有很多本地截图,
+ * 原图 (例如 3816px 宽的 PPT 截图) 直接 base64 会让单文件膨胀到几十 MB.
+ * 这里把大图缩到最长边 1600px 并重新编码为 JPEG, 正文显示宽度只有 980px 左右,
+ * 视觉损失可以忽略, 体积通常能降到原来的 1/5 以下.
+ */
+const EXPORT_IMAGE_MAX_SIDE = 1600
+const EXPORT_IMAGE_QUALITY = 0.82
+const EXPORT_IMAGE_MIN_BYTES = 200 * 1024
+
+function dataUrlByteLength(dataUrl: string): number {
+  const comma = dataUrl.indexOf(',')
+  if (comma === -1) return 0
+  const base64 = dataUrl.slice(comma + 1)
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0
+  return Math.floor((base64.length * 3) / 4) - padding
+}
+
+function loadDataUrlImage(dataUrl: string): Promise<HTMLImageElement | undefined> {
+  return new Promise((resolve) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => resolve(undefined)
+    image.src = dataUrl
+  })
+}
+
+async function optimizeImageDataUrl(dataUrl: string): Promise<string> {
+  if (!/^data:image\/(jpeg|jpg|png|webp|bmp)/i.test(dataUrl)) return dataUrl
+
+  const originalBytes = dataUrlByteLength(dataUrl)
+  const image = await loadDataUrlImage(dataUrl)
+  if (!image) return dataUrl
+
+  const width = image.naturalWidth
+  const height = image.naturalHeight
+  if (!width || !height) return dataUrl
+
+  const scale = Math.min(1, EXPORT_IMAGE_MAX_SIDE / Math.max(width, height))
+  if (scale >= 1 && originalBytes < EXPORT_IMAGE_MIN_BYTES) return dataUrl
+
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(width * scale))
+  canvas.height = Math.max(1, Math.round(height * scale))
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return dataUrl
+  // 统一铺白底, 避免 PNG 透明区域转 JPEG 后发黑
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+  for (const quality of [EXPORT_IMAGE_QUALITY, 0.72]) {
+    const optimized = canvas.toDataURL('image/jpeg', quality)
+    if (dataUrlByteLength(optimized) < originalBytes) return optimized
+  }
+  return dataUrl
+}
+
+/**
  * 将 file: 协议的本地图片内联为 base64 data URI，
  * 否则导出的 HTML 换个目录后相对路径全部失效。
  * 读取失败时保留原 src，远程 (http/https) 图片保持原样。
@@ -351,7 +829,8 @@ async function inlineLocalImages(root: HTMLElement): Promise<void> {
       if (!abs.startsWith('file:')) return
 
       if (!cache.has(abs)) {
-        cache.set(abs, await fetchImageDataUrl(abs))
+        const dataUrl = await fetchImageDataUrl(abs)
+        cache.set(abs, dataUrl ? await optimizeImageDataUrl(dataUrl) : undefined)
       }
       const dataUrl = cache.get(abs)
       if (dataUrl) img.setAttribute('src', dataUrl)

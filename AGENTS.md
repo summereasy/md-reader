@@ -5,6 +5,8 @@ Basically it is forked from last commit of `md-reader/md-reader` (before it is c
 
 For more info, read the README file in this repo.
 
+There is also a CLI (`cli/md-export.ts`, run with Bun) that exports a Markdown file to the same standalone HTML as the toolbar Export button, without opening a browser tab. See the README for usage.
+
 ## rules
 
 Basically, for common workflow for this project, you should:

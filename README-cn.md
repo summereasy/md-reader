@@ -31,6 +31,7 @@
 - 支持一键复制代码块。
 - 支持图片点击放大预览。
 - 支持将当前渲染结果导出为独立 HTML 文件, 含主题切换和打印优化样式。
+- 支持通过命令行 (Bun) 把 Markdown 导出为同样的独立 HTML 文件, 便于脚本化和批量处理。
 - 支持可选的自动刷新。
 - 支持通过快捷键切换侧边栏、居中布局、自动刷新和主题。
 
@@ -41,8 +42,31 @@
 使用时请注意以下限制:
 
 - **Mermaid**: 导出前会等待页面内 Mermaid 图表渲染完成。
-- **图片**: 相对路径和 `file://` 图片在从其他位置打开 HTML 时可能无法显示。如需跨设备分享, 请使用绝对 `http(s)://` 地址。
+- **图片**: 本地 (`file://` 或相对路径) 图片会内联为 base64 data URI, 导出的文件可以独立分享; 远程 `http(s)://` 图片保留原地址, 查看时需要网络。
 - **KaTeX**: 导出 HTML 会从 jsDelivr 加载 KaTeX CSS, 离线查看时数学公式样式需要网络。
+
+## 命令行导出 HTML
+
+除了页面工具栏的下载按钮, 也可以用命令行导出, 方便批量处理, 或者在脚本里生成后再上传:
+
+```bash
+# 在源文件同目录生成 post.html
+bun run export:html path/to/post.md
+
+# 指定输出路径
+bun run cli/md-export.ts post.md -o out/post.html
+
+# HTML 输出到 stdout (便于管道处理或上传)
+bun run cli/md-export.ts post.md --stdout > post.html
+```
+
+CLI 和工具栏按钮使用同一套 `markdown-it` 渲染管线、导出模板、CSS 和图片压缩逻辑, 所以结果一致。完整参数见 `bun run cli/md-export.ts --help` (`--theme`、`--title`、`--font-size`、`--no-mermaid`、`--no-images`、`--no-compress`、`--browser`、`--no-browser` 等)。
+
+依赖与降级行为:
+
+- **Chromium 系浏览器**: Mermaid 图表和图片压缩需要真实浏览器引擎, CLI 会自动探测本机的 Chrome/Chromium/Edge/Brave/Vivaldi, 并以 headless 模式启动 (可用 `--browser <path>` 或环境变量 `MDR_CHROME` 指定)。两件事合并成一次浏览器 pass, 通常不到 1 秒。
+- **找不到浏览器**: 仍然能导出, 但 Mermaid 会降级成普通代码块, 图片内联但不压缩。也可以用 `--no-browser` 主动跳过浏览器。
+- **Bun**: CLI 通过 [Bun](https://bun.sh) 运行 (本仓库工具链已经使用 Bun), `pnpm install` 会装好它依赖的包。
 
 ## 从源码安装
 

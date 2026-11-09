@@ -29,6 +29,7 @@ The logo and some internal class names still come from the original project line
 - Copy code blocks with one click.
 - Zoom images in a lightweight viewer.
 - Export the rendered page as a standalone HTML file with theme toggle and print-friendly styles.
+- Export Markdown to the same standalone HTML from the command line (Bun), for scripting and batch use.
 - Auto-refresh source files when enabled.
 - Use keyboard shortcuts for sidebar, centered layout, refresh, and theme controls.
 
@@ -41,6 +42,29 @@ Limitations to keep in mind:
 - **Mermaid**: export waits for in-page Mermaid rendering to finish before downloading.
 - **Images**: local (`file://`) images are inlined as base64 data URIs so the exported file stays portable. Remote `http(s)://` images keep their original URLs and require network access.
 - **KaTeX**: exported HTML loads KaTeX CSS from jsDelivr, so math styling requires network access when viewing the file offline.
+
+## Export HTML From the CLI
+
+The same export is also available from the command line, so you can batch-export files or generate the HTML from a script without opening a browser tab:
+
+```bash
+# Write post.html next to the source file
+bun run export:html path/to/post.md
+
+# Choose the output path
+bun run cli/md-export.ts post.md -o out/post.html
+
+# Write the HTML to stdout (for piping or uploading)
+bun run cli/md-export.ts post.md --stdout > post.html
+```
+
+The CLI reuses the same `markdown-it` pipeline, export template, CSS, and image compression as the toolbar button, so the result is identical. Run `bun run cli/md-export.ts --help` for all options (`--theme`, `--title`, `--font-size`, `--no-mermaid`, `--no-images`, `--no-compress`, `--browser`, `--no-browser`, ...).
+
+Requirements and fallbacks:
+
+- **Chromium-based browser**: Mermaid diagrams and image compression need a real browser engine, so the CLI launches a headless Chrome/Chromium (auto-detected; override with `--browser <path>` or the `MDR_CHROME` environment variable). Both jobs share a single headless pass, usually taking under a second.
+- **No browser found**: the export still succeeds, but Mermaid blocks fall back to plain code blocks and images are inlined without compression. Pass `--no-browser` to skip the browser on purpose.
+- **Bun**: the CLI runs on [Bun](https://bun.sh), which this repository's tooling already uses; `pnpm install` installs the dependencies it needs.
 
 ## Install From Source
 

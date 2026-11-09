@@ -40,7 +40,7 @@ Use the download button in the page toolbar to export the current rendered Markd
 Limitations to keep in mind:
 
 - **Mermaid**: export waits for in-page Mermaid rendering to finish before downloading.
-- **Images**: local (`file://`) images are inlined as base64 data URIs so the exported file stays portable. Remote `http(s)://` images keep their original URLs and require network access.
+- **Images**: local (`file://`) images are inlined as base64 data URIs so the exported file stays portable. Images over 200KB or wider than 720px are downscaled (max width 720px, max long side 2400px for tall screenshots) and re-encoded as JPEG (quality 82) to keep the file small. Remote `http(s)://` images keep their original URLs and require network access.
 - **KaTeX**: exported HTML loads KaTeX CSS from jsDelivr, so math styling requires network access when viewing the file offline.
 
 ## Export HTML From the CLI

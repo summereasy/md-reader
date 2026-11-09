@@ -14,6 +14,10 @@ async function storageGet(keys?: string | string[] | null): Promise<Record<strin
   })
 }
 
+// 说明: file:// 请求优先由内容脚本注入的扩展 iframe 读取 (见 src/content/local-file.ts),
+// 这里的 fetchText/fetchDataUrl 只是兜底路径。MV3 Service Worker 刚被唤醒时第一次 file://
+// fetch 会被 Chrome 拒绝 (Not allowed to load local resource), 300ms 重试通常已恢复,
+// 因此保留这层重试。
 async function fetchText(url: string): Promise<string> {
   let lastErr: unknown
   for (let i = 0; i < 3; i++) {

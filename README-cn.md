@@ -106,6 +106,12 @@ pnpm build
 
 项目使用 Vue 3、TypeScript、Vite、UnoCSS、TDesign Vue Next、`markdown-it`、Highlight.js、KaTeX 和 Mermaid 构建。
 
+## 本地文件读取
+
+本地文件 (侧边栏文件树、文件切换、自动刷新、导出时内联本地图片) 由内容脚本注入的扩展 origin 隐藏 iframe 读取, 而不是由 MV3 Service Worker 读取。相关实现在 `src/content/local-file.ts` 和 `src/content/file-fetch-frame.ts`。
+
+原因: MV3 Service Worker 刚被唤醒时无法稳定 `fetch()` `file://` 地址, 启动窗口内的第一次请求会被 Chrome 拒绝 (`Not allowed to load local resource`), 即使随后自动重试成功, 这条错误也会一直留在扩展的错误日志里。在扩展上下文的 iframe 里读取则稳定可用、不产生错误; background 里的重试逻辑只作为兜底保留。
+
 ## 致谢
 
 感谢 [Bener](https://github.com/Heroor) 创建最初的 Markdown Reader 项目，并以 MIT License 发布。

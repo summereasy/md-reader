@@ -16,6 +16,7 @@ import {
   parseDirectoryListing,
   type FileTreeEntry,
 } from './file-tree'
+import { readLocalDirectoryHtml, readLocalText } from './local-file'
 import katexCss from 'katex/dist/katex.min.css?raw'
 import './style.css'
 
@@ -749,23 +750,22 @@ async function init(): Promise<void> {
   // Auto refresh
   let pollTimer: number | undefined
   if (data.refresh) {
-    const poll = () => {
-      chrome.runtime.sendMessage({ action: 'fetch', data: { url: currentFileURL } }, (res: string) => {
-        if (res !== undefined) {
-          if (currentRaw === undefined || currentRaw === null) {
-            if (res) window.location.reload()
-          } else if (currentRaw !== res) {
-            currentRaw = res
-            renderMarkdown(res)
-            renderRaw(res)
-            renderToc()
-            if (rawPre) rawPre.textContent = res
-          }
+    const poll = async () => {
+      const res = await readLocalText(currentFileURL, 'fetch')
+      if (res !== undefined) {
+        if (currentRaw === undefined || currentRaw === null) {
+          if (res) window.location.reload()
+        } else if (currentRaw !== res) {
+          currentRaw = res
+          renderMarkdown(res)
+          renderRaw(res)
+          renderToc()
+          if (rawPre) rawPre.textContent = res
         }
-        setTimeout(poll, 500)
-      })
+      }
+      setTimeout(poll, 500)
     }
-    poll()
+    void poll()
   }
 
   // Messages
@@ -1202,32 +1202,24 @@ async function init(): Promise<void> {
     }
   }
 
-  function ensureDirLoaded(item: HTMLElement): Promise<void> {
+  async function ensureDirLoaded(item: HTMLElement): Promise<void> {
     const childList = item.querySelector<HTMLElement>(':scope > .md-reader__file-tree-list')
-    if (!childList || childList.dataset.loaded === 'true') return Promise.resolve()
+    if (!childList || childList.dataset.loaded === 'true') return
     const dirUrl = item.dataset.dirUrl
-    if (!dirUrl) return Promise.resolve()
+    if (!dirUrl) return
     childList.dataset.loaded = 'true'
     item.classList.add('expanded')
     childList.hidden = false
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { action: 'directory', data: { url: dirUrl } },
-        (html: string) => {
-          if (!html || chrome.runtime.lastError) {
-            childList.innerHTML = ''
-            resolve()
-            return
-          }
-          const entries = parseDirectoryListing(html, dirUrl).filter(
-            (entry) => !data.hideDotFiles || !isDotEntry(entry),
-          )
-          childList.innerHTML = ''
-          entries.forEach((entry) => childList.appendChild(renderFileTreeEntry(entry)))
-          resolve()
-        },
-      )
-    })
+    const html = await readLocalDirectoryHtml(dirUrl)
+    if (!html) {
+      childList.innerHTML = ''
+      return
+    }
+    const entries = parseDirectoryListing(html, dirUrl).filter(
+      (entry) => !data.hideDotFiles || !isDotEntry(entry),
+    )
+    childList.innerHTML = ''
+    entries.forEach((entry) => childList.appendChild(renderFileTreeEntry(entry)))
   }
 
   async function filterFileTree(q: string): Promise<void> {
@@ -1351,28 +1343,24 @@ async function init(): Promise<void> {
     loadFileTreeDirectory(rootURL, list)
   }
 
-  function loadFileTreeDirectory(directoryURL: string, list: HTMLElement): void {
+  async function loadFileTreeDirectory(directoryURL: string, list: HTMLElement): Promise<void> {
     list.textContent = 'Loading...'
-    chrome.runtime.sendMessage(
-      { action: 'directory', data: { url: directoryURL } },
-      (html: string) => {
-        if (!html || chrome.runtime.lastError) {
-          list.textContent = 'Unable to load files'
-          return
-        }
+    const html = await readLocalDirectoryHtml(directoryURL)
+    if (!html) {
+      list.textContent = 'Unable to load files'
+      return
+    }
 
-        const entries = parseDirectoryListing(html, directoryURL).filter(
-          (entry) => !data.hideDotFiles || !isDotEntry(entry),
-        )
-        list.innerHTML = ''
-        if (!entries.length) {
-          list.textContent = 'No markdown files'
-          return
-        }
-
-        entries.forEach((entry) => list.appendChild(renderFileTreeEntry(entry)))
-      },
+    const entries = parseDirectoryListing(html, directoryURL).filter(
+      (entry) => !data.hideDotFiles || !isDotEntry(entry),
     )
+    list.innerHTML = ''
+    if (!entries.length) {
+      list.textContent = 'No markdown files'
+      return
+    }
+
+    entries.forEach((entry) => list.appendChild(renderFileTreeEntry(entry)))
   }
 
   function renderFileTreeEntry(entry: FileTreeEntry): HTMLElement {
@@ -1434,16 +1422,10 @@ async function init(): Promise<void> {
     })
   }
 
-  function readMarkdownFile(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ action: 'readFile', data: { url } }, (res: string) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message))
-          return
-        }
-        resolve(res)
-      })
-    })
+  async function readMarkdownFile(url: string): Promise<string> {
+    const res = await readLocalText(url, 'readFile')
+    if (res === undefined) throw new Error('Unable to read file')
+    return res
   }
 
   function updateLocationForCurrentFile(url: string): void {

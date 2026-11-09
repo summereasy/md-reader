@@ -43,6 +43,7 @@ export default defineConfig({
       input: {
         popup: resolve(ROOT, 'popup.html'),
         options: resolve(ROOT, 'options.html'),
+        'file-fetch-frame': resolve(ROOT, 'file-fetch-frame.html'),
         background: resolve(ROOT, 'src/background/index.ts'),
         content: resolve(ROOT, 'src/content/index.ts'),
         'md-renderer': resolve(ROOT, 'src/content/renderer-entry.ts'),

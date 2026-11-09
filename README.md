@@ -104,6 +104,12 @@ pnpm build
 
 The extension is built with Vue 3, TypeScript, Vite, UnoCSS, TDesign Vue Next, `markdown-it`, Highlight.js, KaTeX, and Mermaid.
 
+## Local File Access
+
+Local files (the sidebar file tree, switching between files, auto refresh, and inlining local images when exporting) are read from a hidden extension-origin iframe injected by the content script, not from the MV3 service worker. See `src/content/local-file.ts` and `src/content/file-fetch-frame.ts`.
+
+The reason: a freshly woken MV3 service worker cannot reliably `fetch()` a `file://` URL. The first request inside the worker's startup window is rejected with `Not allowed to load local resource`, and even though the automatic retry then succeeds, that error keeps appearing in the extension's error log. Reading inside an extension-context iframe is stable and leaves no error behind; the worker retry path remains only as a fallback.
+
 ## Acknowledgements
 
 Thanks to [Bener](https://github.com/Heroor) for creating the original Markdown Reader project and releasing it under the MIT License.

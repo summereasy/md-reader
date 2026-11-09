@@ -118,6 +118,10 @@
     {
       "resources": ["assets/*", "assets/katex/fonts/*"],
       "matches": ["<all_urls>"]
+    },
+    {
+      "resources": ["file-fetch-frame.html"],
+      "matches": ["file:///*"]
     }
   ]
 }

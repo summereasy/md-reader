@@ -10,6 +10,7 @@ import {
 } from '@/shared/export-template'
 import type { ExportTheme } from '@/shared/export-template'
 import { optimizeImageDataUrl } from '@/shared/export-image'
+import { readLocalDataUrl } from './local-file'
 
 function resolveCurrentTheme(data: StorageData): ExportTheme {
   const mode = data.colorMode ?? 'light'
@@ -37,22 +38,9 @@ function downloadBlob(filename: string, content: string): void {
 }
 
 function fetchImageDataUrl(url: string): Promise<string | undefined> {
-  return new Promise((resolve) => {
-    try {
-      chrome.runtime.sendMessage(
-        { action: 'fetchDataUrl', data: { url } },
-        (res: unknown) => {
-          if (chrome.runtime.lastError || typeof res !== 'string' || !res.startsWith('data:')) {
-            resolve(undefined)
-          } else {
-            resolve(res)
-          }
-        },
-      )
-    } catch {
-      resolve(undefined)
-    }
-  })
+  return readLocalDataUrl(url).then((res) =>
+    typeof res === 'string' && res.startsWith('data:') ? res : undefined,
+  )
 }
 
 /**
